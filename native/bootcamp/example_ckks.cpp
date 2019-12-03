@@ -1,13 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-#include "bootcamp.h"
-#include <vector>
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include <algorithm>
-#include <chrono>
+#include "helpers.h"
+#include "example_ckks.h"
 
 using namespace std;
 using namespace seal;
@@ -161,17 +156,4 @@ void bootcamp_demo()
 	encoder.decode(pt_result, vec_result);
 	cout << "Result: " << vec_result[0] << endl;
 	cout << "True result: " << inner_product(inputs.cbegin(), inputs.cend(), weights.cbegin(), 0.0) << endl;
-}
-
-
-
-
-int main()
-{
-#ifdef SEAL_VERSION
-	cout << "Microsoft SEAL version: " << SEAL_VERSION << endl;
-#endif
-
-	bootcamp_demo();
-	return 0;
 }

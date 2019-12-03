@@ -134,10 +134,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="bootcamp.cpp" />
+    <ClCompile Include="example_ckks.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="mvproduct.cpp" />
+    <ClCompile Include="polynomial_evaluation.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="bootcamp.h" />
+    <ClInclude Include="example_ckks.h" />
+    <ClInclude Include="helpers.h" />
+    <ClInclude Include="mvproduct.h" />
+    <ClInclude Include="polynomial_evaluation.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -8,10 +8,13 @@ project(Bootcamp VERSION 3.4.5 LANGUAGES CXX)
 # Executable will be in ../bin
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Bootcamp_SOURCE_DIR}/../bin)
 
-add_executable(bootcamp bootcamp.cpp)
+
+add_executable(bootcamp main.cpp)
 target_sources(bootcamp
     PRIVATE
-	# add internal files here
+	example_ckks.cpp
+	mvproduct.cpp
+	polynomial_evaluation.cpp
 )
 
 # Import Microsoft SEAL
