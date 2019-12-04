@@ -12,13 +12,13 @@ class Stopwatch
 public:
 	Stopwatch(string timer_name) :
 		name_(timer_name),
-		start_time_(chrono::high_resolution_clock::now())
+		start_time_(chrono::steady_clock::now())
 	{
 	}
 
 	~Stopwatch()
 	{
-		auto end_time = chrono::high_resolution_clock::now();
+		auto end_time = chrono::steady_clock::now();
 		auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time_);
 		cout << name_ << ": " << duration.count() << " milliseconds" << endl;
 	}
