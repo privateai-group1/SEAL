@@ -145,7 +145,7 @@ void example_rnn()
 	cout << "...done " << endl;
 
 	/// dimension of hidden thingy, also dimension of word embeddings for square-ness of matrices
-	size_t ml_dim = 300;
+	size_t ml_dim = 3;
 	/// Number of words in sentence
 	size_t num_words = 10;
 
@@ -154,6 +154,8 @@ void example_rnn()
 	for (size_t i = 0; i < xxs.size(); ++i) {
 		xxs[i] = random_vector(ml_dim);
 	}
+	print_matrix(xxs, "inputs x_i, by row");
+
 	vec xs(2 * num_words * ml_dim);
 	for (size_t i = 0; i < xs.size(); ++i) {
 		xs[i] = xxs[i / (2 * ml_dim)][i % ml_dim];
@@ -194,7 +196,14 @@ void example_rnn()
 
 	// Weight matrices for encoding phase
 	auto W_x = random_square_matrix(ml_dim);
+	print_matrix(W_x, "W_x:");
 	auto W_h = random_square_matrix(ml_dim);
+	print_matrix(W_h, "W_h:");
+	// Represent weight matrices diagonally
+	vector<vec> diags_W_x = diags(W_x);
+	print_matrix(diags_W_x, "diags_W_x:");
+	vector<vec> diags_W_h = diags(W_h);
+	print_matrix(diags_W_h, "diags_W_h:");
 
 	// Weight vectors/matrices for decoding phase
 	auto b = random_vector(ml_dim);
@@ -202,13 +211,17 @@ void example_rnn()
 	auto U = random_square_matrix(ml_dim);
 	auto V = random_square_matrix(ml_dim);
 	auto c = random_vector(ml_dim);
-
 	// Represent weight matrices diagonally
-	vector<vec> diags_W_x = diags(W_x);
-	vector<vec> diags_W_h = diags(W_h);
 	vector<vec> diags_W = diags(W);
 	vector<vec> diags_U = diags(U);
 	vector<vec> diags_V = diags(V);
+
+	// Start thingies?
+	auto s_x = random_vector(ml_dim);
+	print_vector(s_x, "s_x:");
+	auto s_h = random_vector(ml_dim);
+	print_vector(s_h, "s_h:");
+
 
 	// Encode diags as ptxts
 	cout << "Encoding plaintext model...";
@@ -228,39 +241,61 @@ void example_rnn()
 	}
 	cout << "...done" << endl;
 
-	// Start thingies?
-	auto s_x = random_vector(ml_dim);
-	auto s_h = random_vector(ml_dim);
-
 	// Encoding Phase
 	cout << "Starting encoding phase of RNN:" << endl;
 
-	// Compute W_x * x_1 + W_h * h_0 for the first block
-	cout << "Computing the first (easy) block...";
+	// Compute W_x * x_1 for the first block
+	cout << "Computing W_x * x_1...";
+	Ciphertext block1_ctxt;
+	ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_x, xs_ctxt, block1_ctxt, ml_dim);
+	cout << "...done" << endl;
+
+	// Compute encrypted result:
+	{
+		Plaintext ptxt_block1;
+		decryptor.decrypt(block1_ctxt, ptxt_block1);
+		vec block1;
+		encoder.decode(ptxt_block1, block1);
+		cout << "Encrypted result:" << endl;
+		print_vector(vector(block1.begin(),block1.begin()+ml_dim));
+	}
+
+	// Compute expected result:
+	{
+		vec x1 = vec(xs.begin(), xs.begin() + ml_dim);
+		vec r = mvp(W_x, x1);
+		cout << "Expected result: " << endl;
+		print_vector(r);
+	}
+
+	// Compute W_h * h_0 and add to previous computed W_x * x_1
+	cout << "Compute (ptxt) W_h * h_0 and add to previously computed (W_x * x_1)...";
 	auto h_0 = add(mvp(W_x, s_x), mvp(W_h, s_h));
 	auto rhs_1 = mvp(W_h, h_0);
-	Ciphertext block1_ctxt;
-	ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_h, xs_ctxt, block1_ctxt, ml_dim);
-	// TODO: Encode rhs1 at the correct scale
 	Plaintext ptxt_rhs1;
 	encoder.encode(rhs_1, block1_ctxt.scale(), ptxt_rhs1);
 	evaluator.add_plain_inplace(block1_ctxt, ptxt_rhs1);
 	cout << "...done" << endl;
 
 	// Compute expected result:
-	vec x1 = vec(xs.begin(), xs.begin() + ml_dim);
-	vec r = mvp(W_x, x1);
-	cout << "Expected result: " << endl;
-	print_vector(r);
+	{
+		print_vector(h_0, "h_0 = W_x * s_x:");
+		print_vector(rhs_1, "rhs_1 = W_h * h_0:");
+		vec x1 = vec(xs.begin(), xs.begin() + ml_dim);
+		vec r = add(rhs_1, mvp(W_x, x1));
+		cout << "Expected result: " << endl;
+		print_vector(vector(r.begin(),r.begin()+ml_dim));
+	}
 
 	// Compute encrypted result:
-	Plaintext ptxt_block1;
-	decryptor.decrypt(block1_ctxt, ptxt_block1);
-	vec block1;
-	encoder.decode(ptxt_block1, block1);
-	cout << "Encrypted result:" << endl;
-	print_vector(block1);
-
+	{
+		Plaintext ptxt_block1;
+		decryptor.decrypt(block1_ctxt, ptxt_block1);
+		vec block1;
+		encoder.decode(ptxt_block1, block1);
+		cout << "Encrypted result:" << endl;
+		print_vector(block1);
+	}
 
 	// TODO: Compute W_x * x_i + W_h * h_i-1 for the remaining blocks
 

@@ -128,7 +128,7 @@ inline std::ostream& operator <<(std::ostream& stream, seal::parms_id_type parms
 Helper function: Prints a vector of floating-point values.
 */
 template<typename T>
-inline void print_vector(std::vector<T> vec, std::size_t print_size = 4, int prec = 3)
+inline void print_vector(std::vector<T> vec, std::string msg = "", std::size_t print_size = 4, int prec = 3)
 {
 	/*
 	Save the formatting information for std::cout.
@@ -139,7 +139,7 @@ inline void print_vector(std::vector<T> vec, std::size_t print_size = 4, int pre
 	std::size_t slot_count = vec.size();
 
 	std::cout << std::fixed << std::setprecision(prec);
-	std::cout << std::endl;
+	std::cout << msg << std::endl;
 	if (slot_count <= 2 * print_size)
 	{
 		std::cout << "    [";
@@ -178,7 +178,7 @@ inline void print_vector(std::vector<T> vec, std::size_t print_size = 4, int pre
 Helper function: Prints a matrix of values.
 */
 template<typename T>
-inline void print_matrix(std::vector<std::vector<T>> matrix, std::size_t print_size = 4, int prec = 3)
+inline void print_matrix(std::vector<std::vector<T>> matrix, std::string msg = "", std::size_t print_size = 4, int prec = 3)
 {
 	/*
 	We're not going to print every entry, instead we
@@ -186,12 +186,12 @@ inline void print_matrix(std::vector<std::vector<T>> matrix, std::size_t print_s
 	*/
 	print_size = std::min(matrix.size(), print_size);
 
-	std::cout << std::endl;
+	std::cout << msg << std::endl;
 	for (std::size_t i = 0; i < print_size; i++)
 	{
 		//TODO: This is ugly. Instead have the print functions return a stream?
 		//std::cout << std::setw(3) << std::right;
-		print_vector(matrix[i], print_size, prec);
+		print_vector(matrix[i], "", print_size, prec);
 		//std::cout << "," << std::endl;
 	}
 	if (matrix.size() - print_size > 0) {
@@ -201,7 +201,7 @@ inline void print_matrix(std::vector<std::vector<T>> matrix, std::size_t print_s
 		{
 			//TODO: This is ugly. Instead have the print functions return a stream?
 			//std::cout << std::setw(3) << std::right;
-			print_vector(matrix[i], print_size, prec);
+			print_vector(matrix[i], "", print_size, prec);
 			//std::cout << "," << std::endl;
 		}
 	}
