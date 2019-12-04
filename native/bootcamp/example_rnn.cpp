@@ -41,12 +41,11 @@ vec mvp(matrix M, vec v) {
 	return Mv;
 }
 
-void ptxt_matrix_enc_vector_product_inplace(const GaloisKeys& galois_keys, Evaluator& evaluator,
-	vector<Plaintext> ptxt_diags, Ciphertext& ctv, size_t dim) {
+void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& evaluator,
+	vector<Plaintext> ptxt_diags, const Ciphertext& ctv, Ciphertext& enc_result, size_t dim) {
 	// TODO: Make this aware of batching, i.e. do not include non-relevant slots into computation
 	// TODO: Switch this to the bs-GS algorithm!
 	Ciphertext temp;
-	Ciphertext enc_result;
 	for (int i = 0; i < dim; i++) {
 		// rotate 
 		evaluator.rotate_vector(ctv, i, galois_keys, temp);
@@ -55,7 +54,7 @@ void ptxt_matrix_enc_vector_product_inplace(const GaloisKeys& galois_keys, Evalu
 		if (i == 0) {
 			enc_result = temp;
 		}
-		else {
+		else { //TODO: This should probably use 3-for-2 addition
 			evaluator.add_inplace(enc_result, temp);
 		}
 	}
@@ -228,7 +227,7 @@ void example_rnn()
 		encoder.encode(diags_V[i], scale, ptxt_diags_V[i]);
 	}
 	cout << "...done" << endl;
-	
+
 	// Start thingies?
 	auto s_x = random_vector(ml_dim);
 	auto s_h = random_vector(ml_dim);
@@ -240,11 +239,12 @@ void example_rnn()
 	cout << "Computing the first (easy) block...";
 	auto h_0 = add(mvp(W_x, s_x), mvp(W_h, s_h));
 	auto rhs_1 = mvp(W_h, h_0);
-	ptxt_matrix_enc_vector_product_inplace(galk, evaluator, ptxt_diags_W_h, xs_ctxt, ml_dim);
+	Ciphertext block1_ctxt;
+	ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_h, xs_ctxt, block1_ctxt, ml_dim);
 	// TODO: Encode rhs1 at the correct scale
 	Plaintext ptxt_rhs1;
-	encoder.encode(rhs_1, scale, ptxt_rhs1);
-	evaluator.add_plain_inplace(xs_ctxt, ptxt_rhs1);
+	encoder.encode(rhs_1, block1_ctxt.scale(), ptxt_rhs1);
+	evaluator.add_plain_inplace(block1_ctxt, ptxt_rhs1);
 	cout << "...done" << endl;
 
 	// Compute expected result:
@@ -255,7 +255,7 @@ void example_rnn()
 
 	// Compute encrypted result:
 	Plaintext ptxt_block1;
-	decryptor.decrypt(xs_ctxt, ptxt_block1);
+	decryptor.decrypt(block1_ctxt, ptxt_block1);
 	vec block1;
 	encoder.decode(ptxt_block1, block1);
 	cout << "Encrypted result:" << endl;
