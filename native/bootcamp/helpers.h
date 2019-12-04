@@ -178,39 +178,34 @@ inline void print_vector(std::vector<T> vec, std::size_t print_size = 4, int pre
 Helper function: Prints a matrix of values.
 */
 template<typename T>
-inline void print_matrix(std::vector<T> matrix, std::size_t row_size)
+inline void print_matrix(std::vector<std::vector<T>> matrix, std::size_t print_size = 4, int prec = 3)
 {
 	/*
-	We're not going to print every column of the matrix (there are 2048). Instead
-	print this many slots from beginning and end of the matrix.
+	We're not going to print every entry, instead we
+	print this many elements per row/column at the beginning and end.
 	*/
-	std::size_t print_size = 5;
+	print_size = std::min(matrix.size(), print_size);
 
 	std::cout << std::endl;
-	std::cout << "    [";
 	for (std::size_t i = 0; i < print_size; i++)
 	{
-		std::cout << std::setw(3) << std::right << matrix[i] << ",";
+		//TODO: This is ugly. Instead have the print functions return a stream?
+		//std::cout << std::setw(3) << std::right;
+		print_vector(matrix[i], print_size, prec);
+		//std::cout << "," << std::endl;
 	}
-	std::cout << std::setw(3) << " ...,";
-	for (std::size_t i = row_size - print_size; i < row_size; i++)
-	{
-		std::cout << std::setw(3) << matrix[i]
-			<< ((i != row_size - 1) ? "," : " ]\n");
+	if (matrix.size() - print_size > 0) {
+		std::cout << std::setw(3) << "    ... " << std::endl;
+
+		for (std::size_t i = matrix.size() - print_size; i < matrix.size(); i++)
+		{
+			//TODO: This is ugly. Instead have the print functions return a stream?
+			//std::cout << std::setw(3) << std::right;
+			print_vector(matrix[i], print_size, prec);
+			//std::cout << "," << std::endl;
+		}
 	}
-	std::cout << "    [";
-	for (std::size_t i = row_size; i < row_size + print_size; i++)
-	{
-		std::cout << std::setw(3) << matrix[i] << ",";
-	}
-	std::cout << std::setw(3) << " ...,";
-	for (std::size_t i = 2 * row_size - print_size; i < 2 * row_size; i++)
-	{
-		std::cout << std::setw(3) << matrix[i]
-			<< ((i != 2 * row_size - 1) ? "," : " ]\n");
-	}
-	std::cout << std::endl;
-};
+}
 
 /*
 Helper function: Print line number.

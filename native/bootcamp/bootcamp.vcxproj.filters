@@ -30,6 +30,9 @@
     <ClCompile Include="example_ckks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="example_rnn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="polynomial_evaluation.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="example_ckks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="example_rnn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

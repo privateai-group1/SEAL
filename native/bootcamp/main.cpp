@@ -1,6 +1,7 @@
 #include "example_ckks.h"
 #include "polynomial_evaluation.h"
 #include "mvproduct.h"
+#include "example_rnn.h"
 
 using namespace std;
 int main()
@@ -15,6 +16,7 @@ int main()
 		cout << "  1. Kim's optimized CKKS example" << endl;
 		cout << "  2. Polynomial Evaluation" << endl;
 		cout << "  3. Matrix-Vector Product" << endl;
+		cout << "  4. RNN Example" << endl;
 		cout << "  0. Quit" << endl;
 
 		int selection = 0;
@@ -38,6 +40,9 @@ int main()
 
 		case 3:
 			example_mvproduct();
+			break;
+		case 4:
+			example_rnn();
 			break;
 		case 0:
 			cout << endl;
