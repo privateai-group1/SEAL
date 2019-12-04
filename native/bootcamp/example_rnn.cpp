@@ -116,8 +116,8 @@ void example_rnn()
 	// Setup Parameters
 	EncryptionParameters params(scheme_type::CKKS);
 
-	vector<int> moduli = { 50, 40, 40, 59 }; //TODO: Select proper moduli
-	size_t poly_modulus_degree = 8192; // TODO: Select appropriate degree
+	vector<int> moduli = { 50, 40, 40, 40, 40, 59 }; //TODO: Select proper moduli
+	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
 	double scale = pow(2.0, 40); //TODO: Select appropriate scale
 
 	params.set_poly_modulus_degree(poly_modulus_degree);
@@ -150,8 +150,16 @@ void example_rnn()
 	/// Number of words in sentence
 	size_t num_words = 10;
 
-	// Secret input
-	vec xs = random_vector(num_words * ml_dim);
+	// Secret input - represented as doubled thingy
+	vector<vec> xxs(num_words);
+	for (size_t i = 0; i < xxs.size(); ++i) {
+		xxs[i] = random_vector(ml_dim);
+	}
+	vec xs(2 * num_words * ml_dim);
+	for (size_t i = 0; i < xs.size(); ++i) {
+		xs[i] = xxs[i / (2 * ml_dim)][i % ml_dim];
+	}
+
 	cout << "Encoding and encrypting input...";
 	Plaintext xs_ptxt;
 	encoder.encode(xs, scale, xs_ptxt);
