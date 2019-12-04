@@ -204,9 +204,9 @@ void example_rnn()
 	Evaluator evaluator(context);
 
 	// Weight matrices for encoding phase
-	auto W_x = identity_matrix(ml_dim); // TODO: READD random_square_matrix(ml_dim);
+	auto W_x = random_square_matrix(ml_dim);
 	print_matrix(W_x, "W_x:");
-	auto W_h = identity_matrix(ml_dim); // TODO: READD random_square_matrix(ml_dim);
+	auto W_h = random_square_matrix(ml_dim);
 	print_matrix(W_h, "W_h:");
 	// Represent weight matrices diagonally
 	vector<vec> diags_W_x = diags(W_x);
@@ -279,7 +279,7 @@ void example_rnn()
 
 	// Compute W_h * h_0 and add to previous computed W_x * x_1
 	cout << "Compute (ptxt) W_h * h_0 and add to previously computed (W_x * x_1)...";
-	auto h_0 = vec(ml_dim); //TODO: READD add(mvp(W_x, s_x), mvp(W_h, s_h));
+	auto h_0 = add(mvp(W_x, s_x), mvp(W_h, s_h));
 	auto rhs_1 = mvp(W_h, h_0);
 	Plaintext ptxt_rhs1;
 	encoder.encode(rhs_1, h1_ctxt.scale(), ptxt_rhs1);
