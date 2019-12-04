@@ -255,18 +255,18 @@ void example_rnn()
 
 	// Compute W_x * x_1 for the first block
 	cout << "Computing W_x * x_1...";
-	Ciphertext block1_ctxt;
-	ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_x, xs_ctxt, block1_ctxt, ml_dim);
+	Ciphertext h1_ctxt;
+	ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_x, xs_ctxt, h1_ctxt, ml_dim);
 	cout << "...done" << endl;
 
 	// Compute encrypted result:
 	{
 		Plaintext ptxt_block1;
-		decryptor.decrypt(block1_ctxt, ptxt_block1);
+		decryptor.decrypt(h1_ctxt, ptxt_block1);
 		vec block1;
 		encoder.decode(ptxt_block1, block1);
 		cout << "Encrypted result:" << endl;
-		print_vector(vector(block1.begin(),block1.begin()+ml_dim));
+		print_vector(vector(block1.begin(), block1.begin() + ml_dim));
 	}
 
 	// Compute expected result:
@@ -282,8 +282,8 @@ void example_rnn()
 	auto h_0 = vec(ml_dim); //TODO: READD add(mvp(W_x, s_x), mvp(W_h, s_h));
 	auto rhs_1 = mvp(W_h, h_0);
 	Plaintext ptxt_rhs1;
-	encoder.encode(rhs_1, block1_ctxt.scale(), ptxt_rhs1);
-	evaluator.add_plain_inplace(block1_ctxt, ptxt_rhs1);
+	encoder.encode(rhs_1, h1_ctxt.scale(), ptxt_rhs1);
+	evaluator.add_plain_inplace(h1_ctxt, ptxt_rhs1);
 	cout << "...done" << endl;
 
 	// Compute expected result:
@@ -293,20 +293,47 @@ void example_rnn()
 		vec x1 = vec(xs.begin(), xs.begin() + ml_dim);
 		vec r = add(rhs_1, mvp(W_x, x1));
 		cout << "Expected result: " << endl;
-		print_vector(vector(r.begin(),r.begin()+ml_dim));
+		print_vector(vector(r.begin(), r.begin() + ml_dim));
 	}
 
 	// Compute encrypted result:
 	{
-		Plaintext ptxt_block1;
-		decryptor.decrypt(block1_ctxt, ptxt_block1);
+		Plaintext ptxt_h1;
+		decryptor.decrypt(h1_ctxt, ptxt_h1);
 		vec block1;
-		encoder.decode(ptxt_block1, block1);
+		encoder.decode(ptxt_h1, block1);
 		cout << "Encrypted result:" << endl;
 		print_vector(block1);
 	}
 
 	// TODO: Compute W_x * x_i + W_h * h_i-1 for the remaining blocks
+	Ciphertext h = h1_ctxt;
+	Ciphertext tmp_whh;
+	Ciphertext tmp_wxx;
+	Ciphertext xs_rot;
+	for (size_t i = 2; i <= num_words; ++i) {
+		// Compute W_h * h_(i-1)
+		cout << "Compute W_h * h_" << i - 1 << "...";
+		ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_h, h, tmp_whh, ml_dim);
+		cout << "...done" << endl;
+
+		// Compute W_x * x_i
+		cout << "Compute W_x * x_" << i;
+		evaluator.rotate_vector(xs_ctxt, 2 * ml_dim, galk, xs_rot); //TODO: w_x * x_i from batching
+		ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_x, xs_rot, tmp_wxx, ml_dim);
+		cout << "...done" << endl;
+
+		// h_i = (W_x * x_i) + (W_h * h_(i-1))
+		cout << "Add together to form h_" << i;
+
+		//TODO: Is this rescaling safe?
+		evaluator.rescale_to_next_inplace(tmp_whh);
+		evaluator.mod_switch_to_inplace(tmp_wxx, tmp_whh.parms_id());
+		tmp_whh.scale() = tmp_wxx.scale();
+		
+		evaluator.add(tmp_wxx, tmp_whh, h);
+		cout << "...done" << endl;
+	}
 
 
 	// TODO: Decoding Phase
