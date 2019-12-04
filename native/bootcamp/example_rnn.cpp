@@ -59,6 +59,7 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
 		// rotate 
 		evaluator.rotate_vector(ctv, i, galois_keys, temp);
 		// multiply
+		evaluator.mod_switch_to_inplace(ptxt_diags[i], temp.parms_id());
 		evaluator.multiply_plain_inplace(temp, ptxt_diags[i]);
 		if (i == 0) {
 			enc_result = temp;
@@ -124,7 +125,7 @@ void example_rnn()
 	// Setup Parameters
 	EncryptionParameters params(scheme_type::CKKS);
 
-	vector<int> moduli = { 50, 40, 40, 40, 40, 59 }; //TODO: Select proper moduli
+	vector<int> moduli = { 50, 40, 40, 40, 40, 40, 40, 40, 40, 59 }; //TODO: Select proper moduli
 	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
 	double scale = pow(2.0, 40); //TODO: Select appropriate scale
 
@@ -154,9 +155,9 @@ void example_rnn()
 	cout << "...done " << endl;
 
 	/// dimension of hidden thingy, also dimension of word embeddings for square-ness of matrices
-	size_t ml_dim = 100;
+	size_t ml_dim = 256;
 	/// Number of words in sentence
-	size_t num_words = 10;
+	size_t num_words = 7;
 
 	// Secret input - represented as doubled thingy
 	vector<vec> xxs(num_words);
@@ -334,9 +335,22 @@ void example_rnn()
 		evaluator.add(tmp_wxx, tmp_whh, h);
 		cout << "...done" << endl;
 	}
-
+	
+	// Expected Result
+	cout << "Expected result of encoding phase: TBD" << endl;
+	vec h_expected;
+	// Encrypted Result
+	{
+		Plaintext ptxt_h;
+		decryptor.decrypt(h, ptxt_h);
+		encoder.decode(ptxt_h, h_expected);
+		cout << "Encrypted result of encoding phase:" << endl;
+		print_vector(h_expected);
+	}
+	
+	
 
 	// TODO: Decoding Phase
-
+	cout << "Starting decoding phase of the RNN:" << endl;
 
 }
