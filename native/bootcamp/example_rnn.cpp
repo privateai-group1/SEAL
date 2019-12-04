@@ -18,6 +18,15 @@ matrix random_square_matrix(size_t dim) {
 	return M;
 }
 
+matrix identity_matrix(size_t dim) {
+	matrix M(dim);
+	for (size_t i = 0; i < M.size(); i++) {
+		M[i].resize(dim);
+		M[i][i] = 1;
+	}
+	return M;
+}
+
 vec random_vector(size_t dim) {
 	vec v(dim);
 	for (size_t j = 0; j < dim; j++) {
@@ -145,7 +154,7 @@ void example_rnn()
 	cout << "...done " << endl;
 
 	/// dimension of hidden thingy, also dimension of word embeddings for square-ness of matrices
-	size_t ml_dim = 3;
+	size_t ml_dim = 100;
 	/// Number of words in sentence
 	size_t num_words = 10;
 
@@ -195,9 +204,9 @@ void example_rnn()
 	Evaluator evaluator(context);
 
 	// Weight matrices for encoding phase
-	auto W_x = random_square_matrix(ml_dim);
+	auto W_x = identity_matrix(ml_dim); // TODO: READD random_square_matrix(ml_dim);
 	print_matrix(W_x, "W_x:");
-	auto W_h = random_square_matrix(ml_dim);
+	auto W_h = identity_matrix(ml_dim); // TODO: READD random_square_matrix(ml_dim);
 	print_matrix(W_h, "W_h:");
 	// Represent weight matrices diagonally
 	vector<vec> diags_W_x = diags(W_x);
@@ -270,7 +279,7 @@ void example_rnn()
 
 	// Compute W_h * h_0 and add to previous computed W_x * x_1
 	cout << "Compute (ptxt) W_h * h_0 and add to previously computed (W_x * x_1)...";
-	auto h_0 = add(mvp(W_x, s_x), mvp(W_h, s_h));
+	auto h_0 = vec(ml_dim); //TODO: READD add(mvp(W_x, s_x), mvp(W_h, s_h));
 	auto rhs_1 = mvp(W_h, h_0);
 	Plaintext ptxt_rhs1;
 	encoder.encode(rhs_1, block1_ctxt.scale(), ptxt_rhs1);

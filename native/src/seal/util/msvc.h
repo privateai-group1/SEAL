@@ -14,7 +14,7 @@
 #include "seal/util/config.h"
 
 // Do not throw when Evaluator produces transparent ciphertexts
-//#undef SEAL_THROW_ON_TRANSPARENT_CIPHERTEXT
+#undef SEAL_THROW_ON_TRANSPARENT_CIPHERTEXT
 
 // In Visual Studio redefine std::byte (SEAL_BYTE)
 #undef SEAL_USE_STD_BYTE
