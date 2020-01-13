@@ -15,6 +15,7 @@ target_sources(bootcamp
 	example_ckks.cpp
 	mvproduct.cpp
 	polynomial_evaluation.cpp
+	matrix_vector.cpp
 	example_rnn.cpp
 )
 

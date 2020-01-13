@@ -164,6 +164,7 @@
     <ClCompile Include="example_ckks.cpp" />
     <ClCompile Include="example_rnn.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="matrix_vector.cpp" />
     <ClCompile Include="mvproduct.cpp" />
     <ClCompile Include="polynomial_evaluation.cpp" />
   </ItemGroup>
@@ -171,6 +172,7 @@
     <ClInclude Include="example_ckks.h" />
     <ClInclude Include="example_rnn.h" />
     <ClInclude Include="helpers.h" />
+    <ClInclude Include="matrix_vector.h" />
     <ClInclude Include="mvproduct.h" />
     <ClInclude Include="polynomial_evaluation.h" />
   </ItemGroup>
