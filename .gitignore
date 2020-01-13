@@ -333,3 +333,6 @@ __pycache__/
 
 # OpenCover UI analysis results
 OpenCover/
+
+# Visual Studio / ReSharper settings
+*.sln.DotSettings
