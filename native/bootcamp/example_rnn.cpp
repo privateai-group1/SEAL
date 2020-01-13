@@ -10,7 +10,7 @@ void example_rnn()
 	// Setup Parameters
 	EncryptionParameters params(scheme_type::CKKS);
 
-	vector<int> moduli = { 50, 40, 40, 40, 40, 40, 40, 40, 40, 59 }; //TODO: Select proper moduli
+	vector<int> moduli = {50, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
 	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
 	double scale = pow(2.0, 40); //TODO: Select appropriate scale
 
@@ -46,13 +46,15 @@ void example_rnn()
 
 	// Secret input - represented as doubled thingy
 	vector<vec> xxs(num_words);
-	for (size_t i = 0; i < xxs.size(); ++i) {
+	for (size_t i = 0; i < xxs.size(); ++i)
+	{
 		xxs[i] = random_vector(ml_dim);
 	}
 	print_matrix(xxs, "inputs x_i, by row");
 
 	vec xs(2 * num_words * ml_dim);
-	for (size_t i = 0; i < xs.size(); ++i) {
+	for (size_t i = 0; i < xs.size(); ++i)
+	{
 		xs[i] = xxs[i / (2 * ml_dim)][i % ml_dim];
 	}
 
@@ -78,7 +80,7 @@ void example_rnn()
 	cout << "...done" << endl;
 
 	// Load Ciphertext
-	cout << "Loading ciphertext...";
+	cout << "Loading ciphertext ...";
 	Ciphertext xs_ctxt;
 	{
 		ifstream fs("xs.ct", ios::binary);
@@ -95,10 +97,10 @@ void example_rnn()
 	auto W_h = random_square_matrix(ml_dim);
 	print_matrix(W_h, "W_h:");
 	// Represent weight matrices diagonally
-	vector<vec> diags_W_x = diags(W_x);
-	print_matrix(diags_W_x, "diags_W_x:");
-	vector<vec> diags_W_h = diags(W_h);
-	print_matrix(diags_W_h, "diags_W_h:");
+	vector<vec> diagonals_W_x = diagonals(W_x);
+	print_matrix(diagonals_W_x, "diagonals_W_x:");
+	vector<vec> diagonals_W_h = diagonals(W_h);
+	print_matrix(diagonals_W_h, "diagonals_W_h:");
 
 	// Weight vectors/matrices for decoding phase
 	auto b = random_vector(ml_dim);
@@ -107,9 +109,9 @@ void example_rnn()
 	auto V = random_square_matrix(ml_dim);
 	auto c = random_vector(ml_dim);
 	// Represent weight matrices diagonally
-	vector<vec> diags_W = diags(W);
-	vector<vec> diags_U = diags(U);
-	vector<vec> diags_V = diags(V);
+	vector<vec> diagonals_W = diagonals(W);
+	vector<vec> diagonals_U = diagonals(U);
+	vector<vec> diagonals_V = diagonals(V);
 
 	// Start thingies?
 	auto s_x = random_vector(ml_dim);
@@ -118,21 +120,22 @@ void example_rnn()
 	print_vector(s_h, "s_h:");
 
 
-	// Encode diags as ptxts
+	// Encode diagonals as ptxts
 	cout << "Encoding plaintext model...";
 	// TODO: Do this at appropriate scale when required
 	vector<Plaintext>
-		ptxt_diags_W_x(ml_dim),
-		ptxt_diags_W_h(ml_dim),
-		ptxt_diags_W(ml_dim),
-		ptxt_diags_U(ml_dim),
-		ptxt_diags_V(ml_dim);
-	for (size_t i = 0; i < ml_dim; ++i) {
-		encoder.encode(diags_W_x[i], scale, ptxt_diags_W_x[i]);
-		encoder.encode(diags_W_h[i], scale, ptxt_diags_W_h[i]);
-		encoder.encode(diags_W[i], scale, ptxt_diags_W[i]);
-		encoder.encode(diags_U[i], scale, ptxt_diags_U[i]);
-		encoder.encode(diags_V[i], scale, ptxt_diags_V[i]);
+		ptxt_diagonals_W_x(ml_dim),
+		ptxt_diagonals_W_h(ml_dim),
+		ptxt_diagonals_W(ml_dim),
+		ptxt_diagonals_U(ml_dim),
+		ptxt_diagonals_V(ml_dim);
+	for (size_t i = 0; i < ml_dim; ++i)
+	{
+		encoder.encode(diagonals_W_x[i], scale, ptxt_diagonals_W_x[i]);
+		encoder.encode(diagonals_W_h[i], scale, ptxt_diagonals_W_h[i]);
+		encoder.encode(diagonals_W[i], scale, ptxt_diagonals_W[i]);
+		encoder.encode(diagonals_U[i], scale, ptxt_diagonals_U[i]);
+		encoder.encode(diagonals_V[i], scale, ptxt_diagonals_V[i]);
 	}
 	cout << "...done" << endl;
 
@@ -142,7 +145,7 @@ void example_rnn()
 	// Compute W_x * x_1 for the first block
 	cout << "Computing W_x * x_1...";
 	Ciphertext h1_ctxt;
-	ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_x, xs_ctxt, h1_ctxt, ml_dim);
+	ptxt_matrix_enc_vector_product(galk, evaluator, ml_dim, ptxt_diagonals_W_x, xs_ctxt, h1_ctxt);
 	cout << "...done" << endl;
 
 	// Compute encrypted result:
@@ -197,16 +200,17 @@ void example_rnn()
 	Ciphertext tmp_whh;
 	Ciphertext tmp_wxx;
 	Ciphertext xs_rot;
-	for (size_t i = 2; i <= num_words; ++i) {
+	for (size_t i = 2; i <= num_words; ++i)
+	{
 		// Compute W_h * h_(i-1)
 		cout << "Compute W_h * h_" << i - 1 << "...";
-		ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_h, h, tmp_whh, ml_dim);
+		ptxt_matrix_enc_vector_product(galk, evaluator, ml_dim, ptxt_diagonals_W_h, h, tmp_whh);
 		cout << "...done" << endl;
 
 		// Compute W_x * x_i
 		cout << "Compute W_x * x_" << i;
 		evaluator.rotate_vector(xs_ctxt, 2 * ml_dim, galk, xs_rot); //TODO: w_x * x_i from batching
-		ptxt_matrix_enc_vector_product(galk, evaluator, ptxt_diags_W_x, xs_rot, tmp_wxx, ml_dim);
+		ptxt_matrix_enc_vector_product(galk, evaluator, ml_dim, ptxt_diagonals_W_x, xs_rot, tmp_wxx);
 		cout << "...done" << endl;
 
 		// h_i = (W_x * x_i) + (W_h * h_(i-1))
@@ -232,10 +236,8 @@ void example_rnn()
 		cout << "Encrypted result of encoding phase:" << endl;
 		print_vector(h_expected);
 	}
-	
-	
+
 
 	// TODO: Decoding Phase
 	cout << "Starting decoding phase of the RNN:" << endl;
-
 }
