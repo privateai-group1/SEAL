@@ -1,4 +1,5 @@
 #include "example_rnn.h"
+#include "polynomial_evaluation.h"
 
 using namespace std;
 using namespace seal;
