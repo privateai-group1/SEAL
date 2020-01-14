@@ -80,6 +80,23 @@ vec diag(matrix M, size_t d);
 std::vector<vec> diagonals(const matrix M);
 
 
+/**
+ * \brief Returns a vector of twice the length, with the elements repeated in the same sequence
+ * \param v Vector of length d
+ * \return Vector of length 2*d that contains two concatenated copies of the input vector
+ */
+vec duplicate(const vec v);
+
+/**
+ * \brief Computes the matrix-vector-product between a *square* matrix M, represented by its diagonals, and a vector.
+ *  Plaintext implementation of the FHE-optimized approach due to Smart et al. (diagonal-representation)
+ * \param diagonals Matrix of size dxd represented by the its diagonals (numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal)
+ * \param v Vector of length d
+ * \return The matrix-vector product between M and v, a vector of length d
+ * \throw std::invalid_argument if the dimensions mismatch
+ */
+vec mvp_from_diagonals(std::vector<vec> diagonals, vec v);
+
 ///@} // End of Plaintext Matrix-Vector Helpers
 
 /**

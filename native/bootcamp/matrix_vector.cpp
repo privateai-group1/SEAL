@@ -44,7 +44,7 @@ vec mvp(matrix M, vec v)
 	{
 		throw invalid_argument("Matrix must be well formed and non-zero-dimensional");
 	}
-	
+
 	vec Mv(M.size(), 0);
 	for (size_t i = 0; i < M.size(); i++)
 	{
@@ -108,7 +108,7 @@ vec diag(matrix M, size_t d)
 	if (dim == 0 || M[0].size() != dim || d >= dim)
 	{
 		throw invalid_argument("Matrix must be square and d must be smaller than matrix dimension.");
-	}	
+	}
 	vec diag(dim);
 	for (size_t i = 0; i < dim; i++)
 	{
@@ -129,6 +129,42 @@ vector<vec> diagonals(const matrix M)
 		diagonals[i] = diag(M, i);
 	}
 	return diagonals;
+}
+
+vec duplicate(const vec v)
+{
+	size_t dim = v.size();
+	vec r;
+	r.reserve(2 * dim);
+	r.insert(r.begin(), v.begin(), v.end());
+	r.insert(r.end(), v.begin(), v.end());
+	return r;
+}
+
+vec mvp_from_diagonals(std::vector<vec> diagonals, vec v)
+{
+	const size_t dim = diagonals.size();
+	if (dim == 0 || diagonals[0].size() != dim || v.size() != dim)
+	{
+		throw invalid_argument("Matrix must be square, Matrix and vector must have matching non-zero dimension.");
+	}
+	vec r(dim);
+	for (size_t i = 0; i < dim; ++i)
+	{
+		// t = diagonals[i] * v, component wise
+		vec t(dim);
+		for (size_t j = 0; j < dim; ++j)
+		{
+			t[j] = diagonals[i][j] * v[j];
+		}
+
+		// Accumulate result
+		r = add(r, t);
+
+		// Rotate v to next position (at the end, because it needs to be un-rotated for first iteration)
+		rotate(v.begin(), v.begin() + 1, v.end());
+	}
+	return r;
 }
 
 

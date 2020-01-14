@@ -50,12 +50,12 @@ TEST(PlaintextOperations, MatrixVectorProduct)
 	const auto v = random_vector(dim);
 
 	// Standard multiplication
-	const auto r = mvp(m, v);	
+	const auto r = mvp(m, v);
 	EXPECT_EQ(r.size(), dim);
 	for (size_t i = 0; i < dim; ++i)
 	{
 		double sum = 0;
-		for(size_t j = 0; j < dim; ++j)
+		for (size_t j = 0; j < dim; ++j)
 		{
 			sum += v[j] * m[i][j];
 		}
@@ -90,7 +90,7 @@ TEST(PlaintextOperations, MatrixAdd)
 
 	// Mismatched sizes
 	EXPECT_THROW(add({}, m2), invalid_argument);
-	EXPECT_THROW(add(m1, {}),invalid_argument);
+	EXPECT_THROW(add(m1, {}), invalid_argument);
 	EXPECT_THROW(add(matrix(dim), m2), invalid_argument);
 	EXPECT_THROW(add(m1,matrix(dim)), invalid_argument);
 }
@@ -120,7 +120,7 @@ TEST(PlaintextOperations, Diag)
 	{
 		const auto r = diag(m, d);
 		EXPECT_EQ(r.size(), dim);
-		for(size_t i = 0; i < dim; ++i)
+		for (size_t i = 0; i < dim; ++i)
 		{
 			EXPECT_EQ(r[i], m[i][(i+d) % dim]);
 		}
@@ -139,7 +139,7 @@ TEST(PlaintextOperations, Diagonals)
 	const auto r = diagonals(m);
 	EXPECT_EQ(r.size(), dim);
 	for (size_t d = 0; d < dim; ++d)
-	{		
+	{
 		EXPECT_EQ(r[d].size(), dim);
 		for (size_t i = 0; i < dim; ++i)
 		{
@@ -151,7 +151,42 @@ TEST(PlaintextOperations, Diagonals)
 	EXPECT_THROW(diag(matrix(dim), 0), invalid_argument);
 }
 
-TEST(EncryptedMVP,MatrixVectorProduct)
+TEST(PlaintextOperations, DuplicateVector)
+{
+	const auto v = random_vector(dim);
+
+	const auto r = duplicate(v);
+
+	EXPECT_EQ(r.size(), 2 * dim);
+	for (size_t i = 0; i < dim; ++i)
+	{
+		EXPECT_EQ(r[i], v[i]);
+		EXPECT_EQ(r[dim + i], v[i]);
+	}
+}
+
+TEST(PlaintextOperations, MatrixVectorFromDiagonals)
+{
+	const auto m = random_square_matrix(dim);
+	const auto v = random_vector(dim);
+	const auto expected = mvp(m, v);
+
+	const auto r = mvp_from_diagonals(diagonals(m), v);
+
+	EXPECT_EQ(r.size(), dim);
+	for (size_t i = 0; i < dim; ++ i)
+	{
+		EXPECT_DOUBLE_EQ(r[i], expected[i]);
+	}
+
+
+	// Mismatching sizes should throw exception
+	EXPECT_THROW(mvp_from_diagonals(diagonals(m), {}), invalid_argument);
+	EXPECT_THROW(mvp_from_diagonals({}, v), invalid_argument);
+	EXPECT_THROW(mvp_from_diagonals(vector(dim,vec()), v), invalid_argument);
+}
+
+TEST(EncryptedMVP, MatrixVectorProduct)
 {
 	const auto m = random_square_matrix(dim);
 	const auto v = random_vector(dim);
