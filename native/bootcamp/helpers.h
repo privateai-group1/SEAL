@@ -64,14 +64,16 @@ inline void print_parameters(std::shared_ptr<seal::SEALContext> context)
 	}
 	std::cout << "/" << std::endl;
 	std::cout << "| Encryption parameters :" << std::endl;
-	std::cout << "|   scheme: " << scheme_name << std::endl;
+	std::cout << "|   scheme: " << scheme_name << std::endl;	
 	std::cout << "|   poly_modulus_degree: " <<
 		context_data.parms().poly_modulus_degree() << std::endl;
+	std::cout << "|   Maximal allowed coeff_modulus bit-count for this poly_modulus_degree: "
+		<< seal::CoeffModulus::MaxBitCount(context_data.parms().poly_modulus_degree()) << std::endl;
 
 	/*
 	Print the size of the true (product) coefficient modulus.
 	*/
-	std::cout << "|   coeff_modulus size: ";
+	std::cout << "|   actual coeff_modulus size: ";
 	std::cout << context_data.total_coeff_modulus_bit_count() << " (";
 	auto coeff_modulus = context_data.parms().coeff_modulus();
 	std::size_t coeff_mod_count = coeff_modulus.size();
