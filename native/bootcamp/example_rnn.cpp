@@ -1,6 +1,8 @@
 #include "example_rnn.h"
 #include "helpers.h"
+#include "stopwatch.h"
 #include "matrix_vector.h"
+#include <filesystem>
 
 using namespace std;
 using namespace seal;
@@ -30,7 +32,7 @@ void example_rnn()
 	auto relin_keys = keygen.relin_keys();
 	{
 		ofstream fs("rnn.galk", ios::binary);
-		keygen.galois_keys_save(fs); //TODO: Generate only required galois keys
+		keygen.galois_keys_save(fs); //TODO: Generate only required galois keys		
 	}
 
 	Encryptor encryptor(context, public_key);
@@ -38,6 +40,7 @@ void example_rnn()
 	Decryptor decryptor(context, secret_key);
 	CKKSEncoder encoder(context);
 	cout << "...done " << endl;
+	std::cout << "Galois Key Size: " << filesystem::file_size(filesystem::current_path() / "rnn.galk") << " Bytes" << endl;
 
 	/// dimension of hidden thingy, also dimension of word embeddings for square-ness of matrices
 	size_t ml_dim = 256;
@@ -66,6 +69,7 @@ void example_rnn()
 		encryptor.encrypt_symmetric_save(xs_ptxt, fs);
 	}
 	cout << "...done" << endl;
+	std::cout << "Ciphertext Size: " << filesystem::file_size(filesystem::current_path() / "xs.ct") << " Bytes" << endl;
 
 	// SERVER SIDE:
 	cout << "------------- SERVER ------------------" << endl;
