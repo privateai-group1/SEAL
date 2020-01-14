@@ -173,10 +173,35 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
                                     Ciphertext& enc_result)
 {
 	// TODO: Make this aware of batching, i.e. do not include non-relevant slots into computation
-	// TODO: Implement generic baby-step giant-step for dim other than 256
+
 	Ciphertext temp;
+	for (size_t i = 0; i < dim; i++)
+	{
+		//  Rotate v 
+		evaluator.rotate_vector(ctv, i, galois_keys, temp);
+
+		// multiply
+		evaluator.mod_switch_to_inplace(ptxt_diagonals[i], temp.parms_id());
+		evaluator.multiply_plain_inplace(temp, ptxt_diagonals[i]);
+		if (i == 0)
+		{
+			enc_result = temp;
+		}
+		else
+		{
+			evaluator.add_inplace(enc_result, temp);
+		}
+	}
+}
+
+void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys& galois_keys, Evaluator& evaluator,
+                                         size_t dim, vector<Plaintext> ptxt_diagonals, const Ciphertext& ctv,
+                                         Ciphertext& enc_result)
+{
+	// TODO: Implement generic baby-step giant-step for dim other than 256
 	if (dim == 256)
 	{
+		Ciphertext temp;
 		// baby-step giant-step
 		size_t n1 = 16;
 		size_t n2 = 16;
@@ -193,8 +218,7 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
 					inner = temp;
 				}
 				else
-				{
-					//TODO: This should probably use 3-for-2 addition
+				{					
 					evaluator.add_inplace(inner, temp);
 				}
 			}
@@ -211,22 +235,6 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
 	}
 	else
 	{
-		for (int i = 0; i < dim; i++)
-		{
-			// rotate 
-			evaluator.rotate_vector(ctv, i, galois_keys, temp);
-			// multiply
-			evaluator.mod_switch_to_inplace(ptxt_diagonals[i], temp.parms_id());
-			evaluator.multiply_plain_inplace(temp, ptxt_diagonals[i]);
-			if (i == 0)
-			{
-				enc_result = temp;
-			}
-			else
-			{
-				//TODO: This should probably use 3-for-2 addition
-				evaluator.add_inplace(enc_result, temp);
-			}
-		}
+		throw invalid_argument("Currently only supports dim = 256.");
 	}
 }

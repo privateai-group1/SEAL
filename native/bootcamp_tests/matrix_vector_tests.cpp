@@ -195,9 +195,9 @@ TEST(EncryptedMVP, MatrixVectorProduct)
 	// Setup SEAL Parameters
 	EncryptionParameters params(scheme_type::CKKS);
 	params.set_poly_modulus_degree(8192);
-	params.set_coeff_modulus(CoeffModulus::Create(8192, {40,40,40,50}));
+	params.set_coeff_modulus(CoeffModulus::Create(8192, {50, 40, 50}));
 	auto context = SEALContext::Create(params);
-	
+
 
 	// Generate required keys
 	KeyGenerator keygen(context);
@@ -213,18 +213,36 @@ TEST(EncryptedMVP, MatrixVectorProduct)
 	Evaluator evaluator(context);
 
 	// Encode matrix
-	vector<Plaintext > ptxt_diagonals(dim);
-	for (size_t i = 0; i < dim; ++i) {
-		encoder.encode(diag(m,i), pow(2.0, 40), ptxt_diagonals[i]);
+	vector<Plaintext> ptxt_diagonals(dim);
+	for (size_t i = 0; i < dim; ++i)
+	{
+		encoder.encode(diag(m, i), pow(2.0, 40), ptxt_diagonals[i]);
+	}
+
+	// Decode and compare
+	for (size_t i = 0; i < dim; ++i)
+	{
+		vec t;
+		encoder.decode(ptxt_diagonals[i], t);
+		t.resize(dim);
+		for (size_t j = 0; j < dim; ++j)
+		{
+			EXPECT_FLOAT_EQ(t[j], diag(m, i)[j]);
+		}
 	}
 
 	// Encrypt vector
+	// Must be duplicated, to allow correct rotations!
 	Plaintext ptxt_v;
-	encoder.encode(v, pow(2.0, 40), ptxt_v);
+	encoder.encode(duplicate(v), pow(2.0, 40), ptxt_v);
 	Ciphertext ctxt_v;
 	encryptor.encrypt_symmetric(ptxt_v, ctxt_v);
 
+	// Decrypt and compare
+	// TODO: Decrypt and check vector comes out alright.
+
 	// Compute MVP
+	//TODO: Write code that does the same algorithm on plaintext and debug that first!
 	Ciphertext ctxt_r;
 	ptxt_matrix_enc_vector_product(galois_keys, evaluator, dim, ptxt_diagonals, ctxt_v, ctxt_r);
 
@@ -235,6 +253,83 @@ TEST(EncryptedMVP, MatrixVectorProduct)
 	encoder.decode(ptxt_r, r);
 	r.resize(dim);
 
-	EXPECT_EQ(r, expected);
-	
+	for(size_t i = 0; i < dim; ++i)
+	{
+		EXPECT_FLOAT_EQ(r[i], expected[i]);
+	}
+
+	//TODO: The EXPECT_FLOAT_EQ assertions might occasionally fail since the noise is somewhat random and we get less than 32 bits of guaranteed precision from these parameters
+}
+
+TEST(EncryptedMVP, MatrixVectorProductBSGS)
+{
+	const auto m = random_square_matrix(dim);
+	const auto v = random_vector(dim);
+	const auto expected = mvp(m, v);
+
+	// Setup SEAL Parameters
+	EncryptionParameters params(scheme_type::CKKS);
+	params.set_poly_modulus_degree(8192);
+	params.set_coeff_modulus(CoeffModulus::Create(8192, { 50, 40, 50 }));
+	auto context = SEALContext::Create(params);
+
+
+	// Generate required keys
+	KeyGenerator keygen(context);
+	auto public_key = keygen.public_key();
+	auto secret_key = keygen.secret_key();
+	auto relin_keys = keygen.relin_keys();
+	auto galois_keys = keygen.galois_keys();
+
+	Encryptor encryptor(context, public_key);
+	encryptor.set_secret_key(secret_key);
+	Decryptor decryptor(context, secret_key);
+	CKKSEncoder encoder(context);
+	Evaluator evaluator(context);
+
+	// Encode matrix
+	vector<Plaintext> ptxt_diagonals(dim);
+	for (size_t i = 0; i < dim; ++i)
+	{
+		encoder.encode(diag(m, i), pow(2.0, 40), ptxt_diagonals[i]);
+	}
+
+	// Decode and compare
+	for (size_t i = 0; i < dim; ++i)
+	{
+		vec t;
+		encoder.decode(ptxt_diagonals[i], t);
+		t.resize(dim);
+		for (size_t j = 0; j < dim; ++j)
+		{
+			EXPECT_FLOAT_EQ(t[j], diag(m, i)[j]);
+		}
+	}
+
+	// Encrypt vector
+	// Must be duplicated, to allow correct rotations!
+	Plaintext ptxt_v;
+	encoder.encode(duplicate(v), pow(2.0, 40), ptxt_v);
+	Ciphertext ctxt_v;
+	encryptor.encrypt_symmetric(ptxt_v, ctxt_v);
+
+	// Decrypt and compare
+	// TODO: Decrypt and check vector comes out alright.
+
+	// Compute MVP
+	//TODO: Write code that does the same algorithm on plaintext and debug that first!
+	Ciphertext ctxt_r;
+	ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, dim, ptxt_diagonals, ctxt_v, ctxt_r);
+
+	// Decrypt and decode result
+	Plaintext ptxt_r;
+	decryptor.decrypt(ctxt_r, ptxt_r);
+	vec r;
+	encoder.decode(ptxt_r, r);
+	r.resize(dim);
+
+	for (size_t i = 0; i < dim; ++i)
+	{
+		EXPECT_FLOAT_EQ(r[i], expected[i]);
+	}
 }
