@@ -1,5 +1,5 @@
 #include "example_rnn.h"
-#include "polynomial_evaluation.h"
+#include "helpers.h"
 #include "matrix_vector.h"
 
 using namespace std;

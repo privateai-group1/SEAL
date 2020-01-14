@@ -1,4 +1,5 @@
 #include "polynomial_evaluation.h"
+#include "helpers.h"
 
 using namespace std;
 using namespace seal;

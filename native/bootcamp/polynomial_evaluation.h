@@ -1,6 +1,6 @@
 #pragma once
 
-#include "helpers.h"
+#include <vector>
 #include "seal/seal.h"
 
 void example_polyeval();

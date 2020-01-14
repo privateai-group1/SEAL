@@ -175,6 +175,7 @@
     <ClInclude Include="matrix_vector.h" />
     <ClInclude Include="mvproduct.h" />
     <ClInclude Include="polynomial_evaluation.h" />
+    <ClInclude Include="stopwatch.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

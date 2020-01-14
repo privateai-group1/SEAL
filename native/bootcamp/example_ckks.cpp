@@ -3,31 +3,10 @@
 
 #include "helpers.h"
 #include "example_ckks.h"
+#include "stopwatch.h"
 
 using namespace std;
 using namespace seal;
-
-class Stopwatch
-{
-public:
-	Stopwatch(string timer_name) :
-		name_(timer_name),
-		start_time_(chrono::steady_clock::now())
-	{
-	}
-
-	~Stopwatch()
-	{
-		auto end_time = chrono::steady_clock::now();
-		auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time_);
-		cout << name_ << ": " << duration.count() << " milliseconds" << endl;
-	}
-
-private:
-	string name_;
-	chrono::steady_clock::time_point start_time_;
-};
-
 
 void bootcamp_demo()
 {
@@ -72,7 +51,7 @@ void bootcamp_demo()
 	// Create rotation (Galois) keys
 	{
 		ofstream fs("test.galk", ios::binary);
-		Stopwatch sw("GaloisKeys creation/save time");
+		stopwatch sw("GaloisKeys creation/save time");
 		keygen.galois_keys_save(vector<int>{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 }, fs);
 	}
 
@@ -83,7 +62,7 @@ void bootcamp_demo()
 	{
 		ofstream fs("test.ct", ios::binary);
 
-		Stopwatch sw("Encryption time");
+		stopwatch sw("Encryption time");
 		encryptor.encrypt_symmetric_save(pt, fs);
 	}
 
@@ -103,7 +82,7 @@ void bootcamp_demo()
 
 	Plaintext weight_pt;
 	{
-		Stopwatch sw("Encoding time");
+		stopwatch sw("Encoding time");
 		encoder.encode(weights, scale, weight_pt);
 	}
 
@@ -118,7 +97,7 @@ void bootcamp_demo()
 	Evaluator evaluator(context);
 
 	{
-		Stopwatch sw("Multiply-plain time");
+		stopwatch sw("Multiply-plain time");
 		evaluator.multiply_plain_inplace(ct, weight_pt);
 	}
 
@@ -130,7 +109,7 @@ void bootcamp_demo()
 		GaloisKeys galk;
 		galk.load(context, fs);
 
-		Stopwatch sw("Sum-the-slots time");
+		stopwatch sw("Sum-the-slots time");
 		for (size_t i = 1; i <= encoder.slot_count() / 2; i <<= 1) {
 			Ciphertext temp_ct;
 			evaluator.rotate_vector(ct, i, galk, temp_ct);
@@ -147,7 +126,7 @@ void bootcamp_demo()
 	// Decrypt the result
 	Plaintext pt_result;
 	{
-		Stopwatch sw("Decryption time");
+		stopwatch sw("Decryption time");
 		decryptor.decrypt(ct, pt_result);
 	}
 
