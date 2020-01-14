@@ -8,11 +8,10 @@ const size_t dim = 15;
 TEST(Generation, RandomMatrix)
 {
 	const auto t = random_square_matrix(15);
-	EXPECT_EQ(t.size(), dim);
+	ASSERT_EQ(t.size(), dim);
 	for (auto& x : t)
 	{
-		EXPECT_EQ(x.size(), dim);
-
+		ASSERT_EQ(x.size(), dim);
 		for (auto& y : x)
 		{
 			EXPECT_TRUE((0 <= y) && (y <= 1));
@@ -23,10 +22,10 @@ TEST(Generation, RandomMatrix)
 TEST(Generation, IdentityMatrix)
 {
 	const auto t = identity_matrix(15);
-	EXPECT_EQ(t.size(), dim);
+	ASSERT_EQ(t.size(), dim);
 	for (size_t i = 0; i < t.size(); ++i)
 	{
-		EXPECT_EQ(t[i].size(), dim);
+		ASSERT_EQ(t[i].size(), dim);
 		for (size_t j = 0; j < t[i].size(); ++j)
 		{
 			EXPECT_EQ(t[i][j], (i == j));
@@ -37,7 +36,7 @@ TEST(Generation, IdentityMatrix)
 TEST(Generation, RandomVector)
 {
 	const auto t = random_vector(15);
-	EXPECT_EQ(t.size(), dim);
+	ASSERT_EQ(t.size(), dim);
 	for (auto& x : t)
 	{
 		EXPECT_TRUE((0 <= x) && (x <= 1));
@@ -51,7 +50,7 @@ TEST(PlaintextOperations, MatrixVectorProduct)
 
 	// Standard multiplication
 	const auto r = mvp(m, v);
-	EXPECT_EQ(r.size(), dim);
+	ASSERT_EQ(r.size(), dim);
 	for (size_t i = 0; i < dim; ++i)
 	{
 		double sum = 0;
@@ -78,10 +77,10 @@ TEST(PlaintextOperations, MatrixAdd)
 
 	// Standard addition
 	const auto r = add(m1, m2);
-	EXPECT_EQ(r.size(), dim);
+	ASSERT_EQ(r.size(), dim);
 	for (size_t i = 0; i < dim; ++i)
 	{
-		EXPECT_EQ(r[i].size(), dim);
+		ASSERT_EQ(r[i].size(), dim);
 		for (size_t j = 0; j < dim; ++j)
 		{
 			EXPECT_EQ(r[i][j], (m1[i][j] + m2[i][j]));
@@ -102,7 +101,7 @@ TEST(PlaintextOperations, VectorAdd)
 
 	// Standard addition
 	const auto r = add(v1, v2);
-	EXPECT_EQ(r.size(), dim);
+	ASSERT_EQ(r.size(), dim);
 	for (size_t i = 0; i < dim; ++i)
 	{
 		EXPECT_EQ(r[i], (v1[i] + v2[i]));
@@ -119,7 +118,7 @@ TEST(PlaintextOperations, Diag)
 	for (size_t d = 0; d < dim; ++d)
 	{
 		const auto r = diag(m, d);
-		EXPECT_EQ(r.size(), dim);
+		ASSERT_EQ(r.size(), dim);
 		for (size_t i = 0; i < dim; ++i)
 		{
 			EXPECT_EQ(r[i], m[i][(i+d) % dim]);
@@ -137,10 +136,10 @@ TEST(PlaintextOperations, Diagonals)
 {
 	const auto m = random_square_matrix(dim);
 	const auto r = diagonals(m);
-	EXPECT_EQ(r.size(), dim);
+	ASSERT_EQ(r.size(), dim);
 	for (size_t d = 0; d < dim; ++d)
 	{
-		EXPECT_EQ(r[d].size(), dim);
+		ASSERT_EQ(r[d].size(), dim);
 		for (size_t i = 0; i < dim; ++i)
 		{
 			EXPECT_EQ(r[d][i], m[i][(i + d) % dim]);
@@ -157,7 +156,7 @@ TEST(PlaintextOperations, DuplicateVector)
 
 	const auto r = duplicate(v);
 
-	EXPECT_EQ(r.size(), 2 * dim);
+	ASSERT_EQ(r.size(), 2 * dim);
 	for (size_t i = 0; i < dim; ++i)
 	{
 		EXPECT_EQ(r[i], v[i]);
@@ -173,7 +172,7 @@ TEST(PlaintextOperations, MatrixVectorFromDiagonals)
 
 	const auto r = mvp_from_diagonals(diagonals(m), v);
 
-	EXPECT_EQ(r.size(), dim);
+	ASSERT_EQ(r.size(), dim);
 	for (size_t i = 0; i < dim; ++ i)
 	{
 		EXPECT_DOUBLE_EQ(r[i], expected[i]);
@@ -194,7 +193,7 @@ TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS)
 
 	const auto r = mvp_from_diagonals_bsgs(diagonals(m), v);
 
-	EXPECT_EQ(r.size(), dim);
+	ASSERT_EQ(r.size(), dim);
 	for (size_t i = 0; i < dim; ++i)
 	{
 		EXPECT_DOUBLE_EQ(r[i], expected[i]);
