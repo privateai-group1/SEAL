@@ -186,6 +186,27 @@ TEST(PlaintextOperations, MatrixVectorFromDiagonals)
 	EXPECT_THROW(mvp_from_diagonals(vector(dim,vec()), v), invalid_argument);
 }
 
+TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS)
+{
+	const auto m = random_square_matrix(dim);
+	const auto v = random_vector(dim);
+	const auto expected = mvp(m, v);
+
+	const auto r = mvp_from_diagonals_bsgs(diagonals(m), v);
+
+	EXPECT_EQ(r.size(), dim);
+	for (size_t i = 0; i < dim; ++i)
+	{
+		EXPECT_DOUBLE_EQ(r[i], expected[i]);
+	}
+
+
+	// Mismatching sizes should throw exception
+	EXPECT_THROW(mvp_from_diagonals(diagonals(m), {}), invalid_argument);
+	EXPECT_THROW(mvp_from_diagonals({}, v), invalid_argument);
+	EXPECT_THROW(mvp_from_diagonals(vector(dim, vec()), v), invalid_argument);
+}
+
 void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 {
 	const auto m = random_square_matrix(dimension);

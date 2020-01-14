@@ -167,6 +167,17 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v)
 	return r;
 }
 
+vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v)
+{
+	const size_t dim = diagonals.size();
+	if (dim == 0 || diagonals[0].size() != dim || v.size() != dim)
+	{
+		throw invalid_argument("Matrix must be square, Matrix and vector must have matching non-zero dimension.");
+	}
+
+	return vec();
+}
+
 
 void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& evaluator,
                                     size_t dim, vector<Plaintext> ptxt_diagonals, const Ciphertext& ctv,
