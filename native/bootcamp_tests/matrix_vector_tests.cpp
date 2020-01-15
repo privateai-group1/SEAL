@@ -244,6 +244,12 @@ TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_256)
 	MatrixVectorBSGS(256);
 }
 
+
+/**
+ * \brief Helper function to test plaintext-matrix-encrypted-vector products.
+ * \param dimension Length of vector and dimension of matrix
+ * \param bsgs Whether or not to use the baby-step giant-step algorithm
+ */
 void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 {
 	const auto m = random_square_matrix(dimension);
@@ -292,9 +298,15 @@ void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 	}
 
 	// Encrypt vector
-	// Must be duplicated, to allow correct rotations!
 	Plaintext ptxt_v;
-	encoder.encode(duplicate(v), pow(2.0, 40), ptxt_v);
+
+	// Do we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations?
+	if((params.poly_modulus_degree() / 2) != dim) {
+		encoder.encode(duplicate(v), pow(2.0, 40), ptxt_v);
+	} else
+	{
+		encoder.encode(v, pow(2.0, 40), ptxt_v);
+	}
 	Ciphertext ctxt_v;
 	encryptor.encrypt_symmetric(ptxt_v, ctxt_v);
 
@@ -361,4 +373,16 @@ TEST(EncryptedMVP, MatrixVectorProductBSGS_49)
 TEST(EncryptedMVP, MatrixVectorProductBSGS_256)
 {
 	MatrixVectorProductTest(256, true);
+}
+
+// This test would be nice to have, but takes an unreasonably long time to complete on a desktop PC
+// TEST(EncryptedMVP, MatrixVectorProductBSGS_exact_slots)
+// {
+// 	MatrixVectorProductTest(4096, true);
+// }
+
+TEST(EncryptedMVP, MatrixVectorProductBSGS_5000)
+{
+	// Since this is neither the number of slots, nor does it fit if duplicated, this should fail
+	EXPECT_THROW(MatrixVectorProductTest(5000, true), invalid_argument);
 }

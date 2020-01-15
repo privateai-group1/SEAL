@@ -275,7 +275,13 @@ void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys& galois_keys, Evaluato
 		throw invalid_argument(
 			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a square number!");
 	}
-	// TODO: Make this aware of batching?
+	if (ctv.poly_modulus_degree()/2 != dim && ctv.poly_modulus_degree()/2 < 2*dim )
+	{
+		throw invalid_argument("The number of ciphertext slots must be either exactly dim, or at least 2*dim to allow for duplicate encoding for meaningful rotations.");
+	}
+	/// Whether or not we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations
+	const bool duplicating = (ctv.poly_modulus_degree() / 2) != dim;
+	
 
 	// Since dim is a power-of-two, this should be accurate even with the conversion to double and back
 	const size_t sqrt_dim = sqrt(dim);
@@ -303,7 +309,8 @@ void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys& galois_keys, Evaluato
 			vec current_diagonal = diagonals[(k * sqrt_dim + j) % dim];
 			rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k * sqrt_dim, current_diagonal.end());
 			Plaintext ptxt_current_diagonal;
-			encoder.encode(duplicate(current_diagonal), rotated_vs[j].parms_id(), rotated_vs[j].scale(), ptxt_current_diagonal);			
+			current_diagonal = duplicating ? duplicate(current_diagonal) : current_diagonal; // Duplicate only if necessary
+			encoder.encode(current_diagonal, rotated_vs[j].parms_id(), rotated_vs[j].scale(), ptxt_current_diagonal);			
 			
 			// inner_sum += rot(current_diagonal) * current_rot_v
 			// multiply
