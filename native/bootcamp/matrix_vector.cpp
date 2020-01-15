@@ -102,6 +102,23 @@ vec add(vec a, vec b)
 	}
 }
 
+vec mult(vec a, vec b)
+{
+	if (a.size() != b.size())
+	{
+		throw invalid_argument("Vectors must have the same dimensions.");
+	}
+	else
+	{
+		vec c(a.size());
+		for (size_t i = 0; i < a.size(); i++)
+		{
+			c[i] = a[i] * b[i];
+		}
+		return c;
+	}
+}
+
 vec diag(matrix M, size_t d)
 {
 	const size_t dim = M.size();
@@ -152,11 +169,7 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v)
 	for (size_t i = 0; i < dim; ++i)
 	{
 		// t = diagonals[i] * v, component wise
-		vec t(dim);
-		for (size_t j = 0; j < dim; ++j)
-		{
-			t[j] = diagonals[i][j] * v[j];
-		}
+		vec t = mult(diagonals[i], v);	
 
 		// Accumulate result
 		r = add(r, t);

@@ -112,6 +112,24 @@ TEST(PlaintextOperations, VectorAdd)
 	EXPECT_THROW(add(v1, {}), invalid_argument);
 }
 
+TEST(PlaintextOperations, VectorMult)
+{
+	const auto v1 = random_vector(dim);
+	const auto v2 = random_vector(dim);
+
+	// Standard component-wise multiplication
+	const auto r = mult(v1, v2);
+	ASSERT_EQ(r.size(), dim);
+	for (size_t i = 0; i < dim; ++i)
+	{
+		EXPECT_EQ(r[i], (v1[i] * v2[i]));
+	}
+
+	// Mismatched sizes
+	EXPECT_THROW(mult({}, v2), invalid_argument);
+	EXPECT_THROW(mult(v1, {}), invalid_argument);
+}
+
 TEST(PlaintextOperations, Diag)
 {
 	const auto m = random_square_matrix(dim);

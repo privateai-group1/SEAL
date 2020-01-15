@@ -60,6 +60,15 @@ matrix add(matrix A, matrix B);
  */
 vec add(vec a, vec b);
 
+/**
+ * \brief Multiplication between two vectors (component-wise). Both vectors must have the same length
+ * \param a Vector of any length d
+ * \param b Vector of same length d
+ * \return The component-wise product between a and b, a vector of the same length d as the inputs
+ * \throw std::invalid_argument if the dimensions mismatch
+ */
+vec mult(vec a, vec b);
+
 
 /**
  * \brief The d-th diagonal of a matrix. The matrix M must be square.
