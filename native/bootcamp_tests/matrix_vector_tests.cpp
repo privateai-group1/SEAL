@@ -203,25 +203,41 @@ TEST(PlaintextOperations, MatrixVectorFromDiagonals)
 	EXPECT_THROW(mvp_from_diagonals(vector(dim,vec()), v), invalid_argument);
 }
 
-TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS)
+void MatrixVectorBSGS(size_t dimension)
 {
-	const auto m = random_square_matrix(dim);
-	const auto v = random_vector(dim);
+	const auto m = random_square_matrix(dimension);
+	const auto v = random_vector(dimension);
 	const auto expected = mvp(m, v);
 
-	const auto r = mvp_from_diagonals_bsgs(diagonals(m), v);
+	vec r = mvp_from_diagonals_bsgs(diagonals(m), v);	
 
-	ASSERT_EQ(r.size(), dim);
-	for (size_t i = 0; i < dim; ++i)
+	ASSERT_EQ(r.size(), dimension);
+	for (size_t i = 0; i < dimension; ++i)
 	{
-		EXPECT_DOUBLE_EQ(r[i], expected[i]);
+		EXPECT_FLOAT_EQ(r[i], expected[i]);
 	}
+}
 
+TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_mismatch)
+{
+	// Non-power-of-two sizes should give errors
+	EXPECT_THROW(MatrixVectorBSGS(15),invalid_argument);
+	EXPECT_THROW(MatrixVectorBSGS(205), invalid_argument);
+	
+	// Mismatching sizes should throw exception, even if some are power-of-two
+	EXPECT_THROW(mvp_from_diagonals_bsgs(diagonals(random_square_matrix(16)), {}), invalid_argument);
+	EXPECT_THROW(mvp_from_diagonals_bsgs({}, random_vector(16)), invalid_argument);
+	EXPECT_THROW(mvp_from_diagonals_bsgs(vector(16, vec()), random_vector(16)), invalid_argument);
+}
 
-	// Mismatching sizes should throw exception
-	EXPECT_THROW(mvp_from_diagonals(diagonals(m), {}), invalid_argument);
-	EXPECT_THROW(mvp_from_diagonals({}, v), invalid_argument);
-	EXPECT_THROW(mvp_from_diagonals(vector(dim, vec()), v), invalid_argument);
+TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_16)
+{
+	MatrixVectorBSGS(16);
+}
+
+TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_256)
+{
+	MatrixVectorBSGS(256);
 }
 
 void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
@@ -282,7 +298,6 @@ void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 	// TODO: Decrypt and check vector comes out alright.
 
 	// Compute MVP
-	//TODO: Write code that does the same algorithm on plaintext and debug that first!
 	Ciphertext ctxt_r;
 	if (bsgs)
 	{

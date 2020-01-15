@@ -180,17 +180,57 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v)
 	return r;
 }
 
+// From https://stackoverflow.com/questions/600293/how-to-check-if-a-number-is-a-power-of-2
+bool power_of_two(unsigned long long x)
+{
+	return (x & (x - 1)) == 0;
+}
+
+
 vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v)
 {
 	const size_t dim = diagonals.size();
-	if (dim == 0 || diagonals[0].size() != dim || v.size() != dim)
+	if (dim == 0 || diagonals[0].size() != dim || v.size() != dim || !power_of_two(dim))
 	{
-		throw invalid_argument("Matrix must be square, Matrix and vector must have matching non-zero dimension.");
+		throw invalid_argument(
+			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a power of two!");
 	}
 
-	return vec();
-}
+	// Since dim is a power-of-two, this should be accurate even with the conversion to double and back
+	const size_t sqrt_dim = sqrt(dim);
 
+	// Baby step-giant step algorithm based on "Techniques in privacy-preserving machine learning" by Hao Chen, Microsoft Research
+	// Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
+	// Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
+	// Note that here, n1 = n2 = sqrt(n)
+
+	vec r(dim, 0);
+
+	// Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n2 rotations
+	vector<vec> rotated_vs(sqrt_dim, v);
+	for (size_t j = 0; j < sqrt_dim; ++j)
+	{
+		rotate(rotated_vs[j].begin(), rotated_vs[j].begin() + j, rotated_vs[j].end());
+	}
+
+	for (size_t k = 0; k < sqrt_dim; ++k)
+	{
+		vec inner_sum(dim, 0);
+		for (size_t j = 0; j < sqrt_dim; ++j)
+		{
+			// Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
+			vec current_diagonal = diagonals[(k * sqrt_dim + j)% dim];
+			rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k * sqrt_dim, current_diagonal.end());
+
+			// inner_sum += rot(current_diagonal) * current_rot_v			
+			inner_sum = add(inner_sum, mult(current_diagonal, rotated_vs[j]));
+
+		}
+		rotate(inner_sum.begin(), inner_sum.begin() + (k * sqrt_dim), inner_sum.end());
+		r = add(r, inner_sum);
+	}
+	return r;
+}
 
 void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& evaluator,
                                     size_t dim, vector<Plaintext> ptxt_diagonals, const Ciphertext& ctv,
@@ -203,6 +243,8 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
 	{
 		//  Rotate v 
 		evaluator.rotate_vector(ctv, i, galois_keys, temp);
+		//TODO: Implement Halevi-Shoup "Hoisting", where you save the common parts of the rotations?
+		// See Appendix of "GAZELLE: A Low Latency Framework for  Secure Neural Network Inference"
 
 		// multiply
 		evaluator.mod_switch_to_inplace(ptxt_diagonals[i], temp.parms_id());
