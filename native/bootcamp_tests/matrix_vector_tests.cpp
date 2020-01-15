@@ -220,11 +220,11 @@ void MatrixVectorBSGS(size_t dimension)
 
 TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_mismatch)
 {
-	// Non-power-of-two sizes should give errors
+	// Non-square-number sizes should give errors
 	EXPECT_THROW(MatrixVectorBSGS(15),invalid_argument);
 	EXPECT_THROW(MatrixVectorBSGS(205), invalid_argument);
 	
-	// Mismatching sizes should throw exception, even if some are power-of-two
+	// Mismatching sizes should throw exception, even if some are square numbers
 	EXPECT_THROW(mvp_from_diagonals_bsgs(diagonals(random_square_matrix(16)), {}), invalid_argument);
 	EXPECT_THROW(mvp_from_diagonals_bsgs({}, random_vector(16)), invalid_argument);
 	EXPECT_THROW(mvp_from_diagonals_bsgs(vector(16, vec()), random_vector(16)), invalid_argument);
@@ -235,6 +235,10 @@ TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_16)
 	MatrixVectorBSGS(16);
 }
 
+TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_49)
+{
+	MatrixVectorBSGS(49);
+}
 TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_256)
 {
 	MatrixVectorBSGS(256);
@@ -336,7 +340,7 @@ TEST(EncryptedMVP, MatrixVectorProduct_256)
 
 TEST(EncryptedMVP, MatrixVectorProductBSGS_15)
 {
-	// BSGS supports only power of two dimensions
+	// BSGS currently only supports square-number  dimensions
 	EXPECT_THROW(MatrixVectorProductTest(15, true), invalid_argument);
 }
 
@@ -344,11 +348,16 @@ TEST(EncryptedMVP, MatrixVectorProductBSGS_4)
 {
 	MatrixVectorProductTest(4, true);
 }
+
 TEST(EncryptedMVP, MatrixVectorProductBSGS_16)
 {
 	MatrixVectorProductTest(16, true);
 }
 
+TEST(EncryptedMVP, MatrixVectorProductBSGS_49)
+{
+	MatrixVectorProductTest(49, true);
+}
 TEST(EncryptedMVP, MatrixVectorProductBSGS_256)
 {
 	MatrixVectorProductTest(256, true);

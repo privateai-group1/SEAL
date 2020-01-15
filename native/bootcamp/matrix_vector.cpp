@@ -180,20 +180,28 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v)
 	return r;
 }
 
-// From https://stackoverflow.com/questions/600293/how-to-check-if-a-number-is-a-power-of-2
+/// Is x a power of two, i.e. x = 2^k for an integer k?
 bool power_of_two(unsigned long long x)
 {
+	// From https://stackoverflow.com/questions/600293/how-to-check-if-a-number-is-a-power-of-2
 	return (x & (x - 1)) == 0;
+}
+
+/// Is x a perfect square, i.e. x = y^2 for an integer y?
+bool perfect_square(unsigned long long x)
+{
+	auto sqrt_x = static_cast<unsigned long long>(sqrt(x));
+	return (sqrt_x * sqrt_x == x);
 }
 
 
 vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v)
 {
 	const size_t dim = diagonals.size();
-	if (dim == 0 || diagonals[0].size() != dim || v.size() != dim || !power_of_two(dim))
+	if (dim == 0 || diagonals[0].size() != dim || v.size() != dim || !perfect_square(dim))
 	{
 		throw invalid_argument(
-			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a power of two!");
+			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a square number!");
 	}
 
 	// Since dim is a power-of-two, this should be accurate even with the conversion to double and back
@@ -236,8 +244,6 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
                                     size_t dim, vector<Plaintext> ptxt_diagonals, const Ciphertext& ctv,
                                     Ciphertext& enc_result)
 {
-	// TODO: Make this aware of batching, i.e. do not include non-relevant slots into computation
-
 	Ciphertext temp;
 	for (size_t i = 0; i < dim; i++)
 	{
@@ -264,10 +270,10 @@ void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys& galois_keys, Evaluato
                                          CKKSEncoder& encoder, size_t dim, vector<vec> diagonals,
                                          const Ciphertext& ctv, Ciphertext& enc_result)
 {
-	if (dim == 0 || diagonals[0].size() != dim || !power_of_two(dim))
+	if (dim == 0 || diagonals[0].size() != dim || !perfect_square(dim))
 	{
 		throw invalid_argument(
-			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a power of two!");
+			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a square number!");
 	}
 	// TODO: Make this aware of batching?
 
