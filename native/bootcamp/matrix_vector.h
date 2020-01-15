@@ -140,12 +140,12 @@ void ptxt_matrix_enc_vector_product(const seal::GaloisKeys& galois_keys, seal::E
  *  *ATTENTION*: Batching must be done in a way so that if the matrix has dimension d, rotating the vector left d times results in a correct cyclic rotation of the first d elements!
  * \param[in] galois_keys Rotation keys, should allow arbitrary rotations (reality is slightly more complicated due to baby-step--giant-step algorithm)
  * \param[in] evaluator Evaluation object from SEAL
- * \param[in] ptxt_diagonals The plaintext matrix, represented by the its diagonals (numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal)
+ * \param[in] diagonals The plaintext matrix, represented by the its diagonals (numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal)
  * \param[in] ctv The encrypted vector, batched into a single ciphertext. The length must match the matrix dimension
  * \param[out] enc_result  Encrypted vector, batched into a single ciphertext
  * \param[in] dim Length of the vector and dimension of the (square) Matrix, which must match
  */
 void ptxt_matrix_enc_vector_product_bsgs(const seal::GaloisKeys& galois_keys, seal::Evaluator& evaluator,
-                                         size_t dim, std::vector<seal::Plaintext> ptxt_diagonals,
-                                         const seal::Ciphertext& ctv,
-                                         seal::Ciphertext& enc_result);
+                                         seal::CKKSEncoder& encoder, size_t dim,
+                                         std::vector<std::vector<double>> diagonals,
+                                         const seal::Ciphertext& ctv, seal::Ciphertext& enc_result);

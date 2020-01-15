@@ -283,7 +283,7 @@ void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 		for (size_t j = 0; j < dimension; ++j)
 		{
 			// Test if value is within 0.1% of the actual value or 10 sig figs
-			ASSERT_NEAR(t[j], diag(m, i)[j], max(0.000000001, 0.001 * diag(m, i)[j]));
+			EXPECT_NEAR(t[j], diag(m, i)[j], max(0.000000001, 0.001 * diag(m, i)[j]));
 		}
 	}
 
@@ -301,7 +301,7 @@ void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 	Ciphertext ctxt_r;
 	if (bsgs)
 	{
-		ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, dimension, ptxt_diagonals, ctxt_v, ctxt_r);
+		ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder, dimension, diagonals(m), ctxt_v, ctxt_r);
 	} else
 	{
 		ptxt_matrix_enc_vector_product(galois_keys, evaluator, dimension, ptxt_diagonals, ctxt_v, ctxt_r);
@@ -318,7 +318,7 @@ void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
 	for (size_t i = 0; i < dimension; ++i)
 	{
 		// Test if value is within 0.1% of the actual value or 10 sig figs
-		ASSERT_NEAR(r[i], expected[i], max(0.000000001, 0.001*expected[i]));
+		EXPECT_NEAR(r[i], expected[i], max(0.000000001, 0.001*expected[i]));
 	}
 
 	//TODO: The EXPECT_FLOAT_EQ assertions might occasionally fail since the noise is somewhat random and we get less than 32 bits of guaranteed precision from these parameters
@@ -336,7 +336,17 @@ TEST(EncryptedMVP, MatrixVectorProduct_256)
 
 TEST(EncryptedMVP, MatrixVectorProductBSGS_15)
 {
-	MatrixVectorProductTest(15,true);
+	// BSGS supports only power of two dimensions
+	EXPECT_THROW(MatrixVectorProductTest(15, true), invalid_argument);
+}
+
+TEST(EncryptedMVP, MatrixVectorProductBSGS_4)
+{
+	MatrixVectorProductTest(4, true);
+}
+TEST(EncryptedMVP, MatrixVectorProductBSGS_16)
+{
+	MatrixVectorProductTest(16, true);
 }
 
 TEST(EncryptedMVP, MatrixVectorProductBSGS_256)

@@ -169,7 +169,7 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v)
 	for (size_t i = 0; i < dim; ++i)
 	{
 		// t = diagonals[i] * v, component wise
-		vec t = mult(diagonals[i], v);	
+		vec t = mult(diagonals[i], v);
 
 		// Accumulate result
 		r = add(r, t);
@@ -219,12 +219,12 @@ vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v)
 		for (size_t j = 0; j < sqrt_dim; ++j)
 		{
 			// Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
-			vec current_diagonal = diagonals[(k * sqrt_dim + j)% dim];
-			rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k * sqrt_dim, current_diagonal.end());
+			vec current_diagonal = diagonals[(k * sqrt_dim + j) % dim];
+			rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k * sqrt_dim,
+			       current_diagonal.end());
 
 			// inner_sum += rot(current_diagonal) * current_rot_v			
 			inner_sum = add(inner_sum, mult(current_diagonal, rotated_vs[j]));
-
 		}
 		rotate(inner_sum.begin(), inner_sum.begin() + (k * sqrt_dim), inner_sum.end());
 		r = add(r, inner_sum);
@@ -261,46 +261,69 @@ void ptxt_matrix_enc_vector_product(const GaloisKeys& galois_keys, Evaluator& ev
 }
 
 void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys& galois_keys, Evaluator& evaluator,
-                                         size_t dim, vector<Plaintext> ptxt_diagonals, const Ciphertext& ctv,
-                                         Ciphertext& enc_result)
+                                         CKKSEncoder& encoder, size_t dim, vector<vec> diagonals,
+                                         const Ciphertext& ctv, Ciphertext& enc_result)
 {
-	// TODO: Implement generic baby-step giant-step for dim other than 256
-	if (dim == 256)
+	if (dim == 0 || diagonals[0].size() != dim || !power_of_two(dim))
 	{
-		Ciphertext temp;
-		// baby-step giant-step
-		size_t n1 = 16;
-		size_t n2 = 16;
-		for (size_t k = 0; k < n2; ++k)
+		throw invalid_argument(
+			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a power of two!");
+	}
+	// TODO: Make this aware of batching?
+
+	// Since dim is a power-of-two, this should be accurate even with the conversion to double and back
+	const size_t sqrt_dim = sqrt(dim);
+
+	// Baby step-giant step algorithm based on "Techniques in privacy-preserving machine learning" by Hao Chen, Microsoft Research
+	// Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
+	// Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
+	// Note that here, n1 = n2 = sqrt(n)	
+
+	// Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n2 rotations and some memory
+	vector<Ciphertext> rotated_vs(sqrt_dim, ctv);
+	for (size_t j = 0; j < sqrt_dim; ++j)
+	{
+		// TODO: Implement Halevi-Shoup "Hoisting", where you save the common parts of the rotations?
+		// See Appendix of "GAZELLE: A Low Latency Framework for  Secure Neural Network Inference"
+		evaluator.rotate_vector(ctv, j, galois_keys, rotated_vs[j]);
+	}
+
+	for (size_t k = 0; k < sqrt_dim; ++k)
+	{
+		Ciphertext inner_sum;
+		for (size_t j = 0; j < sqrt_dim; ++j)
 		{
-			Ciphertext inner;
-			for (int j = 0; j < n1; ++j)
+			// Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
+			vec current_diagonal = diagonals[(k * sqrt_dim + j) % dim];
+			rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k * sqrt_dim, current_diagonal.end());
+			Plaintext ptxt_current_diagonal;
+			encoder.encode(duplicate(current_diagonal), rotated_vs[j].parms_id(), rotated_vs[j].scale(), ptxt_current_diagonal);			
+			
+			// inner_sum += rot(current_diagonal) * current_rot_v
+			// multiply
+			Ciphertext temp;
+			evaluator.multiply_plain(rotated_vs[j], ptxt_current_diagonal, temp);			
+			// add
+			if (j == 0)
 			{
-				evaluator.rotate_vector(ctv, j, galois_keys, temp);
-				evaluator.mod_switch_to_inplace(ptxt_diagonals[k * n1 + j], temp.parms_id());
-				evaluator.multiply_plain_inplace(temp, ptxt_diagonals[k * n1 + j]);
-				if (j == 0)
-				{
-					inner = temp;
-				}
-				else
-				{					
-					evaluator.add_inplace(inner, temp);
-				}
-			}
-			evaluator.rotate_vector_inplace(inner, k * n1, galois_keys);
-			if (k == 0)
-			{
-				enc_result = inner;
+				inner_sum = temp;
 			}
 			else
 			{
-				evaluator.add_inplace(enc_result, inner);
-			}
+				evaluator.add_inplace(inner_sum, temp);
+			}			
 		}
-	}
-	else
-	{
-		throw invalid_argument("Currently only supports dim = 256.");
+
+		// Apply "missing bit" of rotation
+		evaluator.rotate_vector_inplace(inner_sum, k * sqrt_dim, galois_keys);
+
+		if (k == 0)
+		{
+			enc_result = inner_sum;
+		}
+		else
+		{
+			evaluator.add_inplace(enc_result, inner_sum);
+		}
 	}
 }
