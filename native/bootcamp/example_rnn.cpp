@@ -9,9 +9,15 @@ using namespace seal;
 
 void example_rnn()
 {
-	// Setup Parameters
+	/// dimension of hidden thingy, also dimension of word embeddings for square-ness of matrices
+	size_t ml_dim = 256;
+	/// Number of words in sentence
+	size_t num_words = 7;
+	
+	// Setup Crypto
+	timer t_setup;
+	
 	EncryptionParameters params(scheme_type::CKKS);
-
 	vector<int> moduli = {50, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
 	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
 	double scale = pow(2.0, 40); //TODO: Select appropriate scale
@@ -19,13 +25,7 @@ void example_rnn()
 	params.set_poly_modulus_degree(poly_modulus_degree);
 	params.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, moduli));
 	auto context = SEALContext::Create(params);
-	print_parameters(context);
-
-	// Client-side
-	cout << "------------- CLIENT ------------------" << endl;
-
-	// Generate Keys
-	cout << "Generating keys...";
+		
 	KeyGenerator keygen(context);
 	auto public_key = keygen.public_key();
 	auto secret_key = keygen.secret_key();
@@ -39,21 +39,18 @@ void example_rnn()
 	encryptor.set_secret_key(secret_key);
 	Decryptor decryptor(context, secret_key);
 	CKKSEncoder encoder(context);
-	cout << "...done " << endl;
-	std::cout << "Galois Key Size: " << filesystem::file_size(filesystem::current_path() / "rnn.galk") << " Bytes" << endl;
+	
+	print_parameters(context);
+	cout << "Setup & generated keys in " << t_setup.get() << " ms." << endl;
+	cout << "Galois Key Size: " << filesystem::file_size(filesystem::current_path() / "rnn.galk") << " Bytes" << endl;
 
-	/// dimension of hidden thingy, also dimension of word embeddings for square-ness of matrices
-	size_t ml_dim = 256;
-	/// Number of words in sentence
-	size_t num_words = 7;
-
+	
 	// Secret input - represented as doubled thingy
 	vector<vec> xxs(num_words);
 	for (size_t i = 0; i < xxs.size(); ++i)
 	{
 		xxs[i] = random_vector(ml_dim);
 	}
-	print_matrix(xxs, "inputs x_i, by row");
 
 	vec xs(2 * num_words * ml_dim);
 	for (size_t i = 0; i < xs.size(); ++i)
@@ -61,7 +58,7 @@ void example_rnn()
 		xs[i] = xxs[i / (2 * ml_dim)][i % ml_dim];
 	}
 
-	cout << "Encoding and encrypting input...";
+
 	Plaintext xs_ptxt;
 	encoder.encode(xs, scale, xs_ptxt);
 	{
@@ -69,6 +66,10 @@ void example_rnn()
 		encryptor.encrypt_symmetric_save(xs_ptxt, fs);
 	}
 	cout << "...done" << endl;
+
+	
+
+	
 	std::cout << "Ciphertext Size: " << filesystem::file_size(filesystem::current_path() / "xs.ct") << " Bytes" << endl;
 
 	// SERVER SIDE:
