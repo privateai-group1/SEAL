@@ -1,6 +1,6 @@
 #include "example_rnn.h"
 #include "helpers.h"
-#include "stopwatch.h"
+#include "timer.h"
 #include "matrix_vector.h"
 #include <filesystem>
 
