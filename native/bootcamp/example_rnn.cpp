@@ -32,77 +32,33 @@ void decrypt_and_compare(const Ciphertext& ctxt_r, vec expected, Decryptor& decr
 	compare(r, expected);
 }
 
-/// Copied from SEAL
-uint64_t galois_elt_from_step(int step, size_t coeff_count)
+/// Create only the required power-of-two rotations
+/// This can save quite a bit, for example for poly_modulus_degree = 16384
+/// The default galois keys (with zlib compression) are 307 MB large
+/// Whereas with dimension = 256, they are only 189 MB
+/// For poly_modulus_degree = 32768, the default keys are 661MB large
+/// while with dimension = 256, they are only 378 MB
+vector<int> custom_steps(size_t dimension)
 {
-	uint32_t n = util::safe_cast<uint32_t>(coeff_count);
-	uint32_t m32 = util::mul_safe(n, uint32_t(2));
-	uint64_t m = static_cast<uint64_t>(m32);
-
-	if (step == 0)
+	if (dimension == 256)
 	{
-		return m - 1;
+		// Slight optimization: No -128, no -256
+		return { 1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64, 128, 256 };
 	}
 	else
 	{
-		// Extract sign of steps. When steps is positive, the rotation
-		// is to the left; when steps is negative, it is to the right.
-		bool sign = step < 0;
-		uint32_t pos_step = util::safe_cast<uint32_t>(abs(step));
-
-		if (pos_step >= (n >> 1))
+		vector<int> steps{};
+		for (int i = 1; i <= dimension; i <<= 1)
 		{
-			throw invalid_argument("step count too large");
+			steps.push_back(i);
+			steps.push_back(-i);
 		}
-
-		pos_step &= m32 - 1;
-		if (sign)
-		{
-			step = util::safe_cast<int>(n >> 1) - util::safe_cast<int>(pos_step);
-		}
-		else
-		{
-			step = util::safe_cast<int>(pos_step);
-		}
-
-		// Construct Galois element for row rotation
-		uint64_t gen = 3;
-		uint64_t galois_elt = 1;
-		while (step--)
-		{
-			galois_elt *= gen;
-			galois_elt &= m - 1;
-		}
-		return galois_elt;
+		return steps;
 	}
-}
-
-/// Copied from SEAL
-vector<uint64_t> galois_elts_from_steps(shared_ptr<SEALContext> context_, const vector<int>& steps)
-{
-	vector<uint64_t> galois_elts;
-	size_t coeff_count = context_->key_context_data()->parms().poly_modulus_degree();
-
-	transform(steps.begin(), steps.end(), back_inserter(galois_elts),
-		[&](auto s) { return galois_elt_from_step(s, coeff_count); });
-
-	return galois_elts;
-}
-
-/// Create only the required power-of-two rotations
-vector<uint64_t> galois_elts_custom(shared_ptr<SEALContext> context_, size_t dimension)
-{
-	vector<int> steps{};
-	for (int i = 1; i <= dimension; i <<= 1)
-	{
-		steps.push_back(i);
-		steps.push_back(-i);
-	}
-	return galois_elts_from_steps(context_, steps);
 }
 
 void example_rnn()
-{
+{	
 	/// dimension of word embeddings 
 	const size_t embedding_size = 256;
 	/// dimension of hidden thingy, MUST be the same as embedding size for square-ness of matrices
@@ -128,8 +84,7 @@ void example_rnn()
 	auto relin_keys = keygen.relin_keys();
 	{
 		ofstream fs("rnn.galk", ios::binary);
-		keygen.galois_keys_save(galois_elts_custom(context, hidden_size), fs);
-		//TODO: Generate only required galois keys		
+		keygen.galois_keys_save(custom_steps(hidden_size), fs);			
 	}
 
 	Encryptor encryptor(context, public_key);
