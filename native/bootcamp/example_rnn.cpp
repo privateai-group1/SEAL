@@ -29,6 +29,75 @@ void decrypt_and_compare(const Ciphertext& ctxt_r, vec expected, Decryptor& decr
 		compare(r, expected);	
 }
 
+/// Copied from SEAL
+uint64_t galois_elt_from_step(int step, size_t coeff_count)
+{
+	uint32_t n = util::safe_cast<uint32_t>(coeff_count);
+	uint32_t m32 = util::mul_safe(n, uint32_t(2));
+	uint64_t m = static_cast<uint64_t>(m32);
+
+	if (step == 0)
+	{
+		return m - 1;
+	}
+	else
+	{
+		// Extract sign of steps. When steps is positive, the rotation
+		// is to the left; when steps is negative, it is to the right.
+		bool sign = step < 0;
+		uint32_t pos_step = util::safe_cast<uint32_t>(abs(step));
+
+		if (pos_step >= (n >> 1))
+		{
+			throw invalid_argument("step count too large");
+		}
+
+		pos_step &= m32 - 1;
+		if (sign)
+		{
+			step = util::safe_cast<int>(n >> 1) - util::safe_cast<int>(pos_step);
+		}
+		else
+		{
+			step = util::safe_cast<int>(pos_step);
+		}
+
+		// Construct Galois element for row rotation
+		uint64_t gen = 3;
+		uint64_t galois_elt = 1;
+		while (step--)
+		{
+			galois_elt *= gen;
+			galois_elt &= m - 1;
+		}
+		return galois_elt;
+	}
+}
+
+/// Copied from SEAL
+vector<uint64_t> galois_elts_from_steps(shared_ptr<SEALContext> context_, const vector<int>& steps)
+{
+	vector<uint64_t> galois_elts;
+	size_t coeff_count = context_->key_context_data()->parms().poly_modulus_degree();
+
+	transform(steps.begin(), steps.end(), back_inserter(galois_elts),
+		[&](auto s) { return galois_elt_from_step(s, coeff_count); });
+
+	return galois_elts;
+}
+
+/// Create only the required power-of-two rotations
+vector<uint64_t> galois_elts_custom(shared_ptr<SEALContext> context_, size_t dimension)
+{
+	vector<int> steps{};
+	for (int i = 1; i <= dimension; i <<= 1)
+	{
+		steps.push_back(i);
+		steps.push_back(-i);
+	}
+	return galois_elts_from_steps(context_, steps);
+}
+
 void example_rnn()
 {
 	/// dimension of word embeddings 
@@ -42,9 +111,10 @@ void example_rnn()
 	timer t_setup;
 	
 	EncryptionParameters params(scheme_type::CKKS);
-	vector<int> moduli = {59, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
-	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
-	double scale = pow(2.0, 40); //TODO: Select appropriate scale
+	vector<int> moduli = {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60};
+	//TODO: Select proper moduli
+	size_t poly_modulus_degree = 32768;
+	double scale = pow(2.0, 40); //TODO: Select more appropriate scale
 
 	params.set_poly_modulus_degree(poly_modulus_degree);
 	params.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, moduli));
@@ -56,7 +126,8 @@ void example_rnn()
 	auto relin_keys = keygen.relin_keys();
 	{
 		ofstream fs("rnn.galk", ios::binary);
-		keygen.galois_keys_save(fs); //TODO: Generate only required galois keys		
+		keygen.galois_keys_save(galois_elts_custom(context, hidden_size), fs);
+		//TODO: Generate only required galois keys		
 	}
 
 	Encryptor encryptor(context, public_key);
