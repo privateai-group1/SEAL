@@ -7,6 +7,28 @@
 using namespace std;
 using namespace seal;
 
+void compare(vec r, vec expected) {
+	for (size_t i = 0; i < r.size(); ++i){
+		// Test if value is within 0.1% of the actual value or 10 sig figs
+		const auto difference = abs(r[i] - expected[i]);
+		if (difference > max(0.000000001, 0.001 * abs(expected[i])))
+		{
+			cout << "\tERROR: difference of " << difference << " detected, where r[i]: " << r[i] << " and expected[i]: " << expected[i] << endl;
+			//throw runtime_error("Comparison to expected failed");
+		}		
+	}
+}
+
+void decrypt_and_compare(const Ciphertext& ctxt_r, vec expected, Decryptor& decryptor, CKKSEncoder& encoder)
+{	
+		Plaintext ptxt_t;
+		decryptor.decrypt(ctxt_r, ptxt_t);
+		vec r;
+		encoder.decode(ptxt_t, r);
+		r.resize(expected.size());
+		compare(r, expected);	
+}
+
 void example_rnn()
 {
 	/// dimension of word embeddings 
@@ -20,7 +42,7 @@ void example_rnn()
 	timer t_setup;
 	
 	EncryptionParameters params(scheme_type::CKKS);
-	vector<int> moduli = {50, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
+	vector<int> moduli = {59, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
 	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
 	double scale = pow(2.0, 40); //TODO: Select appropriate scale
 
@@ -86,7 +108,7 @@ void example_rnn()
 		ofstream fs("xs.ct", ios::binary);
 		encryptor.encrypt_symmetric_save(ptxt_x, fs);
 	}
-	cout << "Encrypted input in" << t_enc.get() << " ms." << endl;	
+	cout << "Encrypted input in " << t_enc.get() << " ms." << endl;	
 	std::cout << "Ciphertext Size: " << filesystem::file_size(filesystem::current_path() / "xs.ct") << " Bytes" << endl;
 		
 
@@ -108,6 +130,8 @@ void example_rnn()
 	}
 	cout << "Loaded ciphertext of x from disk in " << t_load_ctxt.get() << " ms." << endl;
 
+	// Create the Evaluator
+	Evaluator evaluator(context);
 	
 	/**
 	 *  The model parameters are split into the encoding phase parameters (M_x, M_h)
@@ -133,110 +157,63 @@ void example_rnn()
 	/// Encoding-phase start value
 	auto h0 = random_vector(hidden_size);
 
-	// Create the Evaluator
-	Evaluator evaluator(context);
+	/// Current hidden in/output 
+	Ciphertext ctxt_h;
 
-	// TODO: Decoding-phase parameters
+	// The very first cell is different, since h0 is still a plaintext:
+	/// Time for 0th cell
+	timer t_cell0;
+	// Compute W_x * x_0
+	ptxt_matrix_enc_vector_product_bsgs(galk, evaluator, encoder, hidden_size, diagonals(M_x),ctxt_x,ctxt_h);
+	// Compute W_h * h_0 (still plaintext)
+	Plaintext ptxt_t;
+	auto t = mvp(M_h, h0);
+	encoder.encode(duplicate(t), ctxt_h.parms_id(), ctxt_h.scale(), ptxt_t);
+	// Add (W_x * x_0) + (W_h * h_0)
+	evaluator.add_plain_inplace(ctxt_h, ptxt_t);
+	// Add ((W_x * x_0) + (W_h * h_0)) + b
+	Plaintext ptxt_b;
+	encoder.encode(duplicate(b), ctxt_h.parms_id(), ctxt_h.scale(), ptxt_b);
+	evaluator.add_plain_inplace(ctxt_h, ptxt_b);
+	// Re-scale to avoid blow-up
+	evaluator.rescale_to_next_inplace(ctxt_h);
+	// Square
+	evaluator.square_inplace(ctxt_h);	
+	cout << "Computed 0th cell in " << t_cell0.get() << " ms." << endl;
+
+	// Compare results with plaintext operation:
+	vec h_expected = rnn_with_squaring(x[0], h0, M_x, M_h, b);
+	decrypt_and_compare(ctxt_h, h_expected , decryptor, encoder);
+
+	// Compute the next cells
+	for(size_t i = 1; i < num_chunks; ++i)
+	{
+		/// Time for i-th cell
+		timer t_cell;
+		
+		// Re-linearize h to prevent noise blow-up
+		evaluator.relinearize_inplace(ctxt_h, relin_keys);
+		// Re-scale h to prevent blow-up of plaintext bit size
+		evaluator.rescale_to_next_inplace(ctxt_h);
+
+		// rotate x to bring x[i] to the current position
+		Ciphertext ctxt_x_rot;
+		ctxt_x_rot = ctxt_x;
+		evaluator.mod_switch_to_inplace(ctxt_x_rot, ctxt_h.parms_id());
+		ctxt_x_rot.scale() = ctxt_h.scale(); // force scale to be exact
+		evaluator.rotate_vector_inplace(ctxt_x_rot, i, galk);
+		
+		// Compute the RNN cell
+		ptxt_weights_enc_input_rnn(galk, evaluator, encoder, hidden_size, diagonals(M_x), diagonals(M_h), b, ctxt_x_rot, ctxt_h);
+
+		cout << "Computed " << i <<"th cell in " << t_cell.get() << " ms." << endl;
+
+		// Compare results with plaintext operation:
+		h_expected = rnn_with_squaring(x[i], h_expected, M_x, M_h, b);
+		decrypt_and_compare(ctxt_h, h_expected, decryptor, encoder);
+	}
 	
-	// Encoding Phase
-	cout << "Starting encoding phase of RNN:" << endl;
+	// TODO: Decoding-phase parameters
 
-	//// Compute W_x * x_1 for the first block
-	//cout << "Computing W_x * x_1...";
-	//Ciphertext ctxt_h;
-	//ptxt_matrix_enc_vector_product(galk, evaluator, embedding_size, ptxt_diagonals_W_x, ctxt_x, h1_ctxt);
-	//cout << "...done" << endl;
-
-	//// Compute encrypted result:
-	//{
-	//	Plaintext ptxt_block1;
-	//	decryptor.decrypt(h1_ctxt, ptxt_block1);
-	//	vec block1;
-	//	encoder.decode(ptxt_block1, block1);
-	//	cout << "Encrypted result:" << endl;
-	//	print_vector(vector(block1.begin(), block1.begin() + embedding_size));
-	//}
-
-	//// Compute expected result:
-	//{
-	//	vec x1 = vec(x_batched.begin(), x_batched.begin() + embedding_size);
-	//	vec r = mvp(M_x, x1);
-	//	cout << "Expected result: " << endl;
-	//	print_vector(r);
-	//}
-
-	//// Compute W_h * h_0 and add to previous computed W_x * x_1
-	//cout << "Compute (ptxt) W_h * h_0 and add to previously computed (W_x * x_1)...";
-	//auto h_0 = add(mvp(M_x, s_x), mvp(M_h, s_h));
-	//auto rhs_1 = mvp(M_h, h_0);
-	//Plaintext ptxt_rhs1;
-	//encoder.encode(rhs_1, h1_ctxt.scale(), ptxt_rhs1);
-	//evaluator.add_plain_inplace(h1_ctxt, ptxt_rhs1);
-	//cout << "...done" << endl;
-
-	//// Compute expected result:
-	//{
-	//	print_vector(h_0, "h_0 = W_x * s_x:");
-	//	print_vector(rhs_1, "rhs_1 = W_h * h_0:");
-	//	vec x1 = vec(x_batched.begin(), x_batched.begin() + embedding_size);
-	//	vec r = add(rhs_1, mvp(M_x, x1));
-	//	cout << "Expected result: " << endl;
-	//	print_vector(vector(r.begin(), r.begin() + embedding_size));
-	//}
-
-	//// Compute encrypted result:
-	//{
-	//	Plaintext ptxt_h1;
-	//	decryptor.decrypt(h1_ctxt, ptxt_h1);
-	//	vec block1;
-	//	encoder.decode(ptxt_h1, block1);
-	//	cout << "Encrypted result:" << endl;
-	//	print_vector(block1);
-	//}
-
-	//// TODO: Compute W_x * x_i + W_h * h_i-1 for the remaining blocks
-	//Ciphertext h = h1_ctxt;
-	//Ciphertext tmp_whh;
-	//Ciphertext tmp_wxx;
-	//Ciphertext xs_rot;
-	//for (size_t i = 2; i <= num_chunks; ++i)
-	//{
-	//	// Compute W_h * h_(i-1)
-	//	cout << "Compute W_h * h_" << i - 1 << "...";
-	//	ptxt_matrix_enc_vector_product(galk, evaluator, embedding_size, ptxt_diagonals_W_h, h, tmp_whh);
-	//	cout << "...done" << endl;
-
-	//	// Compute W_x * x_i
-	//	cout << "Compute W_x * x_" << i;
-	//	evaluator.rotate_vector(ctxt_x, 2 * embedding_size, galk, xs_rot); //TODO: w_x * x_i from batching
-	//	ptxt_matrix_enc_vector_product(galk, evaluator, embedding_size, ptxt_diagonals_W_x, xs_rot, tmp_wxx);
-	//	cout << "...done" << endl;
-
-	//	// h_i = (W_x * x_i) + (W_h * h_(i-1))
-	//	cout << "Add together to form h_" << i;
-
-	//	//TODO: Is this rescaling safe?
-	//	evaluator.rescale_to_next_inplace(tmp_whh);
-	//	evaluator.mod_switch_to_inplace(tmp_wxx, tmp_whh.parms_id());
-	//	tmp_whh.scale() = tmp_wxx.scale();
-
-	//	evaluator.add(tmp_wxx, tmp_whh, h);
-	//	cout << "...done" << endl;
-	//}
-
-	//// Expected Result
-	//cout << "Expected result of encoding phase: TBD" << endl;
-	//vec h_expected;
-	//// Encrypted Result
-	//{
-	//	Plaintext ptxt_h;
-	//	decryptor.decrypt(h, ptxt_h);
-	//	encoder.decode(ptxt_h, h_expected);
-	//	cout << "Encrypted result of encoding phase:" << endl;
-	//	print_vector(h_expected);
-	//}
-
-
-	//// TODO: Decoding Phase
-	//cout << "Starting decoding phase of the RNN:" << endl;
+	// TODO: Decoding Phase
 }
