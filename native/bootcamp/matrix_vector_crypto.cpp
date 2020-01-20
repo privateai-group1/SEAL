@@ -127,12 +127,10 @@ void ptxt_weights_enc_input_rnn(const seal::GaloisKeys& galois_keys, seal::Evalu
 
 	// W_h * h
 	ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder,dim, diagonals_W_h,ctxt_h,ctxt_h);
-	evaluator.rescale_to_next_inplace(ctxt_h);
-	
+		
 	// W_x * x
 	Ciphertext ctxt_t;
 	ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder, dim, diagonals_W_x, ctxt_x, ctxt_t);
-	evaluator.rescale_to_next_inplace(ctxt_t);
 
 	// h = W_h * h + W_x * x
 	evaluator.add_inplace(ctxt_h, ctxt_t);
@@ -142,6 +140,9 @@ void ptxt_weights_enc_input_rnn(const seal::GaloisKeys& galois_keys, seal::Evalu
 	b = duplicating ? duplicate(b) : b;
 	encoder.encode(b, ctxt_h.parms_id(), ctxt_h.scale(), ptxt_b);
 	evaluator.add_plain_inplace(ctxt_h, ptxt_b);
+
+	// Rescale before multiplication, to prevent blow-up
+	evaluator.rescale_to_next_inplace(ctxt_h);
 	
 	// Squaring
 	evaluator.square_inplace(ctxt_h);

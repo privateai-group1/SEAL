@@ -168,7 +168,7 @@ namespace MVCryptoTests {
 		EncryptionParameters params(scheme_type::CKKS);
 		const double scale = pow(2.0, 40);
 		params.set_poly_modulus_degree(8192);
-		params.set_coeff_modulus(CoeffModulus::Create(8192, { 50, 40, 40, 50 }));
+		params.set_coeff_modulus(CoeffModulus::Create(8192, { 60, 40, 40, 60 }));
 		auto context = SEALContext::Create(params);
 
 
