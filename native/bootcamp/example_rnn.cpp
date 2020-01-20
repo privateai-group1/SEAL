@@ -7,26 +7,29 @@
 using namespace std;
 using namespace seal;
 
-void compare(vec r, vec expected) {
-	for (size_t i = 0; i < r.size(); ++i){
+void compare(vec r, vec expected)
+{
+	for (size_t i = 0; i < r.size(); ++i)
+	{
 		// Test if value is within 0.1% of the actual value or 10 sig figs
 		const auto difference = abs(r[i] - expected[i]);
 		if (difference > max(0.000000001, 0.001 * abs(expected[i])))
 		{
-			cout << "\tERROR: difference of " << difference << " detected, where r[i]: " << r[i] << " and expected[i]: " << expected[i] << endl;
+			cout << "\tERROR: difference of " << difference << " detected, where r[i]: " << r[i] << " and expected[i]: "
+				<< expected[i] << endl;
 			//throw runtime_error("Comparison to expected failed");
-		}		
+		}
 	}
 }
 
 void decrypt_and_compare(const Ciphertext& ctxt_r, vec expected, Decryptor& decryptor, CKKSEncoder& encoder)
-{	
-		Plaintext ptxt_t;
-		decryptor.decrypt(ctxt_r, ptxt_t);
-		vec r;
-		encoder.decode(ptxt_t, r);
-		r.resize(expected.size());
-		compare(r, expected);	
+{
+	Plaintext ptxt_t;
+	decryptor.decrypt(ctxt_r, ptxt_t);
+	vec r;
+	encoder.decode(ptxt_t, r);
+	r.resize(expected.size());
+	compare(r, expected);
 }
 
 /// Copied from SEAL
@@ -106,10 +109,10 @@ void example_rnn()
 	const size_t hidden_size = embedding_size;
 	/// Number of sentence chunks to process
 	const size_t num_chunks = 7;
-	
+
 	// Setup Crypto
 	timer t_setup;
-	
+
 	EncryptionParameters params(scheme_type::CKKS);
 	vector<int> moduli = {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60};
 	//TODO: Select proper moduli
@@ -119,7 +122,7 @@ void example_rnn()
 	params.set_poly_modulus_degree(poly_modulus_degree);
 	params.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, moduli));
 	auto context = SEALContext::Create(params);
-		
+
 	KeyGenerator keygen(context);
 	auto public_key = keygen.public_key();
 	auto secret_key = keygen.secret_key();
@@ -134,7 +137,7 @@ void example_rnn()
 	encryptor.set_secret_key(secret_key);
 	Decryptor decryptor(context, secret_key);
 	CKKSEncoder encoder(context);
-	
+
 	print_parameters(context);
 	cout << "Setup & generated keys in " << t_setup.get() << " ms." << endl;
 	cout << "Galois Key Size: " << filesystem::file_size(filesystem::current_path() / "rnn.galk") << " Bytes" << endl;
@@ -149,7 +152,7 @@ void example_rnn()
 	 *  This is done using a simple pre-trained model.
 	 *  These embeddings are now the inputs (x_0, x_1, ..) into the encryption
 	 */
-	
+
 	/// Secret input, embeddings of sentence chunks into R^256
 	vector<vec> x(num_chunks);
 	for (size_t i = 0; i < x.size(); ++i)
@@ -179,9 +182,9 @@ void example_rnn()
 		ofstream fs("xs.ct", ios::binary);
 		encryptor.encrypt_symmetric_save(ptxt_x, fs);
 	}
-	cout << "Encrypted input in " << t_enc.get() << " ms." << endl;	
+	cout << "Encrypted input in " << t_enc.get() << " ms." << endl;
 	std::cout << "Ciphertext Size: " << filesystem::file_size(filesystem::current_path() / "xs.ct") << " Bytes" << endl;
-		
+
 
 	// Load Galois Keys
 	timer t_load_glk;
@@ -203,7 +206,7 @@ void example_rnn()
 
 	// Create the Evaluator
 	Evaluator evaluator(context);
-	
+
 	/**
 	 *  The model parameters are split into the encoding phase parameters (M_x, M_h)
 	 *  and the decoding phase parameters (TODO: Decoding-phase parameters documentation)
@@ -218,7 +221,7 @@ void example_rnn()
 
 	/// Encoding-phase weight matrix (part for x)
 	auto M_x = random_square_matrix(hidden_size);
-	
+
 	/// Encoding-phase weight matrix (part for hidden input)
 	auto M_h = random_square_matrix(hidden_size);
 
@@ -235,7 +238,7 @@ void example_rnn()
 	/// Time for 0th cell
 	timer t_cell0;
 	// Compute W_x * x_0
-	ptxt_matrix_enc_vector_product_bsgs(galk, evaluator, encoder, hidden_size, diagonals(M_x),ctxt_x,ctxt_h);
+	ptxt_matrix_enc_vector_product_bsgs(galk, evaluator, encoder, hidden_size, diagonals(M_x), ctxt_x, ctxt_h);
 	// Compute W_h * h_0 (still plaintext)
 	Plaintext ptxt_t;
 	auto t = mvp(M_h, h0);
@@ -249,19 +252,19 @@ void example_rnn()
 	// Re-scale to avoid blow-up
 	evaluator.rescale_to_next_inplace(ctxt_h);
 	// Square
-	evaluator.square_inplace(ctxt_h);	
+	evaluator.square_inplace(ctxt_h);
 	cout << "Computed 0th cell in " << t_cell0.get() << " ms." << endl;
 
 	// Compare results with plaintext operation:
 	vec h_expected = rnn_with_squaring(x[0], h0, M_x, M_h, b);
-	decrypt_and_compare(ctxt_h, h_expected , decryptor, encoder);
+	decrypt_and_compare(ctxt_h, h_expected, decryptor, encoder);
 
 	// Compute the next cells
-	for(size_t i = 1; i < num_chunks; ++i)
+	for (size_t i = 1; i < num_chunks; ++i)
 	{
 		/// Time for i-th cell
 		timer t_cell;
-		
+
 		// Re-linearize h to prevent noise blow-up
 		evaluator.relinearize_inplace(ctxt_h, relin_keys);
 		// Re-scale h to prevent blow-up of plaintext bit size
@@ -273,17 +276,18 @@ void example_rnn()
 		evaluator.mod_switch_to_inplace(ctxt_x_rot, ctxt_h.parms_id());
 		ctxt_x_rot.scale() = ctxt_h.scale(); // force scale to be exact
 		evaluator.rotate_vector_inplace(ctxt_x_rot, i, galk);
-		
-		// Compute the RNN cell
-		ptxt_weights_enc_input_rnn(galk, evaluator, encoder, hidden_size, diagonals(M_x), diagonals(M_h), b, ctxt_x_rot, ctxt_h);
 
-		cout << "Computed " << i <<"th cell in " << t_cell.get() << " ms." << endl;
+		// Compute the RNN cell
+		ptxt_weights_enc_input_rnn(galk, evaluator, encoder, hidden_size, diagonals(M_x), diagonals(M_h), b, ctxt_x_rot,
+		                           ctxt_h);
+
+		cout << "Computed " << i << "th cell in " << t_cell.get() << " ms." << endl;
 
 		// Compare results with plaintext operation:
 		h_expected = rnn_with_squaring(x[i], h_expected, M_x, M_h, b);
 		decrypt_and_compare(ctxt_h, h_expected, decryptor, encoder);
 	}
-	
+
 	// TODO: Decoding-phase parameters
 
 	// TODO: Decoding Phase
