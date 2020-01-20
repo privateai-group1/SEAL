@@ -114,10 +114,9 @@ void example_rnn()
 	timer t_setup;
 
 	EncryptionParameters params(scheme_type::CKKS);
-	vector<int> moduli = {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60};
-	//TODO: Select proper moduli
-	size_t poly_modulus_degree = 32768;
-	double scale = pow(2.0, 40); //TODO: Select more appropriate scale
+	vector<int> moduli = {59, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
+	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
+	double scale = pow(2.0, 40); //TODO: Select appropriate scale
 
 	params.set_poly_modulus_degree(poly_modulus_degree);
 	params.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, moduli));
