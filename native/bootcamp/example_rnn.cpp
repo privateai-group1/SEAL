@@ -11,7 +11,7 @@ void example_rnn()
 {
 	/// dimension of word embeddings 
 	const size_t embedding_size = 256;
-	/// dimension of hidden thiny, same as embedding size for square-ness of matrices
+	/// dimension of hidden thingy, same as embedding size for square-ness of matrices
 	const size_t hidden_size = embedding_size;
 	/// Number of sentence chunks to process
 	const size_t num_chunks = 7;
