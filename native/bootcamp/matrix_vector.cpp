@@ -1,5 +1,6 @@
 #include "matrix_vector.h"
 #include <stdexcept>
+#include <algorithm>
 
 using namespace std;
 
@@ -229,4 +230,45 @@ bool perfect_square(unsigned long long x)
 {
 	auto sqrt_x = static_cast<unsigned long long>(sqrt(x));
 	return (sqrt_x * sqrt_x == x);
+}
+
+vec rnn_with_relu(vec x, vec h, matrix W_x, matrix W_h, vec b)
+{
+	const size_t dim = x.size();
+	if (dim == 0 || h.size() != dim || W_x.size() != dim || W_h.size() != dim || b.size() != dim)
+	{
+		throw invalid_argument("All dimensions must be non-zero and matching");
+	}
+
+	// Compute W_x * x + W_h * h + b
+	vec r = add(mvp(W_x, x), mvp(W_h, h));
+	r = add(r, b);
+
+	// ReLU(x) = max(0,x)
+	for(auto & t : r)
+	{
+		t = max(0., t);
+	}
+
+	return r;	
+}
+
+vec rnn_with_squaring(vec x, vec h, matrix W_x, matrix W_h, vec b)
+{
+	const size_t dim = x.size();
+	if (dim == 0 || h.size() != dim || W_x.size() != dim || W_h.size() != dim || b.size() != dim)
+	{
+		throw invalid_argument("All dimensions must be non-zero and matching");
+	}
+
+	// Compute W_x * x + W_h * h + b
+	vec r = add(mvp(W_x, x), mvp(W_h, h));
+	r = add(r, b);
+
+	// squaring as activation function
+	for (auto& t : r)
+	{
+		t = t * t;
+	}
+	return r;
 }

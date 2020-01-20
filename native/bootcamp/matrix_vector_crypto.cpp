@@ -106,3 +106,43 @@ void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys& galois_keys, Evaluato
 		}
 	}
 }
+
+void ptxt_weights_enc_input_rnn(const seal::GaloisKeys& galois_keys, seal::Evaluator& evaluator,
+                                seal::CKKSEncoder& encoder, size_t dim, std::vector<vec> diagonals_W_x, std::vector<vec> diagonals_W_h, vec b,
+                                const seal::Ciphertext& ctxt_x, seal::Ciphertext& ctxt_h)
+{
+	if (dim == 0 || diagonals_W_x.size() != dim || diagonals_W_h.size()!= dim || !perfect_square(dim))
+	{
+		throw invalid_argument(
+			"Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a square number!");
+	}
+	if (ctxt_x.poly_modulus_degree() / 2 != dim && ctxt_x.poly_modulus_degree() / 2 < 2 * dim)
+	{
+		throw invalid_argument(
+			"The number of ciphertext slots must be either exactly dim, or at least 2*dim to allow for duplicate encoding for meaningful rotations.");
+	}
+	
+	/// Whether or not we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations
+	const bool duplicating = (ctxt_x.poly_modulus_degree() / 2) != dim;
+
+	// W_h * h
+	ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder,dim, diagonals_W_h,ctxt_h,ctxt_h);
+	evaluator.rescale_to_next_inplace(ctxt_h);
+	
+	// W_x * x
+	Ciphertext ctxt_t;
+	ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder, dim, diagonals_W_x, ctxt_x, ctxt_t);
+	evaluator.rescale_to_next_inplace(ctxt_t);
+
+	// h = W_h * h + W_x * x
+	evaluator.add_inplace(ctxt_h, ctxt_t);
+
+	// h = (W_h * h + W_x * x) + b
+	Plaintext ptxt_b;
+	b = duplicating ? duplicate(b) : b;
+	encoder.encode(b, ctxt_h.parms_id(), ctxt_h.scale(), ptxt_b);
+	evaluator.add_plain_inplace(ctxt_h, ptxt_b);
+	
+	// Squaring
+	evaluator.square_inplace(ctxt_h);
+}

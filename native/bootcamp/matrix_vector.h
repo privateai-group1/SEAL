@@ -123,4 +123,28 @@ vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
  */
 bool perfect_square(unsigned long long x);
 
+/**
+ * \brief Computes a single step of a simple recurrent neural network (RNN) using ReLU rather than tanh() as the activation function
+ * \param x Vector of length d containing the current input
+ * \param h Vector length d containing the hidden input, usually from a previous layer
+ * \param W_x Weight matrix of size d x d (weights for current input)
+ * \param W_h Weight matrix of size d x d (weights for hidden input)
+ * \param b  Bias vector of length d
+ * \return Vector of length d, containing ReLU(W_x * x + W_h * h + b)
+ * \throw std::invalid_argument if the dimensions mismatch
+ */
+vec rnn_with_relu(vec x, vec h, matrix W_x, matrix W_h, vec b);
+
+/**
+ * \brief Computes a single step of a simple recurrent neural network (RNN) using x^2 rather than tanh() or ReLU as the activation function
+ * \param x Vector of length d containing the current input
+ * \param h Vector length d containing the hidden input, usually from a previous layer
+ * \param W_x Weight matrix of size d x d (weights for current input)
+ * \param W_h Weight matrix of size d x d (weights for hidden input)
+ * \param b  Bias vector of length d
+ * \return Vector of length d, containing (W_x * x + W_h * h + b)^2
+ * \throw std::invalid_argument if the dimensions mismatch
+ */
+vec rnn_with_squaring(vec x, vec h, matrix W_x, matrix W_h, vec b);
+
 ///@} // End of Plaintext Matrix-Vector Helpers

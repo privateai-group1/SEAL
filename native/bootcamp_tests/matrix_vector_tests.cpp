@@ -253,4 +253,94 @@ namespace MVPlaintextTests
 		EXPECT_EQ(perfect_square(7 * 5), false);
 		EXPECT_EQ(perfect_square(929 * 941), false);
 	}
+
+	TEST(PlaintextOperations, RNN_with_ReLU)
+	{
+		const auto W_h = random_square_matrix(dim);
+		const auto W_x = random_square_matrix(dim);
+		const auto b = random_vector(dim);
+		const auto h = random_vector(dim);
+		const auto x = random_vector(dim);
+
+		vec r = rnn_with_relu(x, h, W_x, W_h, b);
+		vec t = add(add(mvp(W_x, x), mvp(W_h, h)), b);
+		for (size_t i = 0; i < dim; ++i)
+		{
+			EXPECT_DOUBLE_EQ(r[i], max(0., t[i]));
+		}
+	}
+
+	TEST(PlaintextOperations, RNN_with_ReLU_identity_matrix)
+	{
+		const auto b = random_vector(dim);
+		const auto h = random_vector(dim);
+		const auto x = random_vector(dim);
+
+		vec r = rnn_with_relu(x, h, identity_matrix(dim), identity_matrix(dim), b);
+		vec t = add(add(x, h), b);
+		for (size_t i = 0; i < dim; ++i)
+		{
+			EXPECT_DOUBLE_EQ(r[i], max(0., t[i]));
+		}
+	}
+
+	TEST(PlaintextOperations, RNN_with_ReLU_mismatch)
+	{
+		const auto W_h = random_square_matrix(dim);
+		const auto W_x = random_square_matrix(dim);
+		const auto b = random_vector(dim);
+		const auto h = random_vector(dim);
+		const auto x = random_vector(dim);
+
+		EXPECT_THROW(rnn_with_relu({}, h, W_x, W_h, b),invalid_argument);
+		EXPECT_THROW(rnn_with_relu(x, {}, W_x, W_h, b), invalid_argument);
+		EXPECT_THROW(rnn_with_relu(x, h, {}, W_h, b), invalid_argument);
+		EXPECT_THROW(rnn_with_relu(x, h, W_x, {}, b), invalid_argument);
+		EXPECT_THROW(rnn_with_relu(x, h, W_x, W_h, {}), invalid_argument);			
+	}
+	
+	TEST(PlaintextOperations, RNN_with_Squaring)
+	{
+		const auto W_h = random_square_matrix(dim);
+		const auto W_x = random_square_matrix(dim);
+		const auto b = random_vector(dim);
+		const auto h = random_vector(dim);
+		const auto x = random_vector(dim);
+
+		vec r = rnn_with_squaring(x, h, W_x, W_h, b);
+		vec t = add(add(mvp(W_x, x), mvp(W_h, h)), b);
+		for (size_t i = 0; i < dim; ++i)
+		{
+			EXPECT_DOUBLE_EQ(r[i], t[i]*t[i]);
+		}
+	}
+
+	TEST(PlaintextOperations, RNN_with_Squaring_identity_matrix)
+	{
+		const auto b = random_vector(dim);
+		const auto h = random_vector(dim);
+		const auto x = random_vector(dim);
+
+		vec r = rnn_with_squaring(x, h, identity_matrix(dim), identity_matrix(dim), b);
+		vec t = add(add(x, h), b);
+		for (size_t i = 0; i < dim; ++i)
+		{
+			EXPECT_DOUBLE_EQ(r[i], t[i] * t[i]);
+		}
+	}
+
+	TEST(PlaintextOperations, RNN_with_Squaring_mismatch)
+	{
+		const auto W_h = random_square_matrix(dim);
+		const auto W_x = random_square_matrix(dim);
+		const auto b = random_vector(dim);
+		const auto h = random_vector(dim);
+		const auto x = random_vector(dim);
+
+		EXPECT_THROW(rnn_with_squaring({}, h, W_x, W_h, b), invalid_argument);
+		EXPECT_THROW(rnn_with_squaring(x, {}, W_x, W_h, b), invalid_argument);
+		EXPECT_THROW(rnn_with_squaring(x, h, {}, W_h, b), invalid_argument);
+		EXPECT_THROW(rnn_with_squaring(x, h, W_x, {}, b), invalid_argument);
+		EXPECT_THROW(rnn_with_squaring(x, h, W_x, W_h, {}), invalid_argument);
+	}
 }
