@@ -15,8 +15,8 @@ void compare(vec r, vec expected)
 		const auto difference = abs(r[i] - expected[i]);
 		if (difference > max(0.000000001, 0.001 * abs(expected[i])))
 		{
-			cout << "\tERROR: difference of " << difference << " detected, where r[i]: " << r[i] << " and expected[i]: "
-				<< expected[i] << endl;
+			cout << "\tERROR: difference of " << difference << " detected, where r[" << i << "]: " << r[i] <<
+				" and expected[" << i << "]: " << expected[i] << endl;
 			//throw runtime_error("Comparison to expected failed");
 		}
 	}
@@ -42,8 +42,8 @@ vector<int> custom_steps(size_t dimension)
 {
 	if (dimension == 256)
 	{
-		// Slight optimization: No -128, no -256
-		return { 1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64, 128, 256 };
+		// Slight further optimization: No -128, no -256
+		return {1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64, 128, 256};
 	}
 	else
 	{
@@ -58,21 +58,41 @@ vector<int> custom_steps(size_t dimension)
 }
 
 void example_rnn()
-{	
+{
 	/// dimension of word embeddings 
 	const size_t embedding_size = 256;
 	/// dimension of hidden thingy, MUST be the same as embedding size for square-ness of matrices
 	const size_t hidden_size = embedding_size;
 	/// Number of sentence chunks to process
-	const size_t num_chunks = 7;
+	const size_t num_chunks = 5;
 
 	// Setup Crypto
 	timer t_setup;
 
+	/***
+	 * Usually, we try to keep the scale consistent through the computation.
+	 * However, because we keep squaring, we know that our values are constantly increasing in size
+	 * Since the weight matrices are from [-1/2, 1/2] and random, they do not contribute significantly
+	 * In a real deployment, training would have to include a loss term that forces this zero-sum property
+	 *
+	 * After the 0th cell, we therefore mostly deal with small positive values roughly in the range 0.01 to 100
+	 * After the 1st cell, we mostly have values in the range 1 to 1000
+	 * After the 2nd cell, we mostly have values in the range 10^6 to 10^7
+	 * After the 3rd cell, we mostly have values in the range 10^14 to 10^17
+	 */
 	EncryptionParameters params(scheme_type::CKKS);
-	vector<int> moduli = {59, 40, 40, 40, 40, 40, 40, 40, 40, 59}; //TODO: Select proper moduli
-	size_t poly_modulus_degree = 16384; // TODO: Select appropriate degree
-	double scale = pow(2.0, 40); //TODO: Select appropriate scale
+	vector<int> moduli = {
+		60, 60, 60, 60, 60, 60, 60, 40, /* All of this space is for the result, still at scale^2 */
+		40 /* rs 4th cell */, 40 /* rescale squared h_4 */,
+		40 /* rs 3rd cell */, 40 /* rescale squared h_3 */,
+		40 /* rs 2nd cell */, 40 /* rescale squared h_2 */,
+		40 /* rs 1st cell */, 40 /* rescale squared h_1 */ ,
+		40 /* rescale inside 0th cell */,
+		60 /* special prime */
+	};
+	//TODO: Select proper moduli
+	size_t poly_modulus_degree = 32768;
+	double scale = pow(2.0, 40); //TODO: Select more appropriate scale
 
 	params.set_poly_modulus_degree(poly_modulus_degree);
 	params.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, moduli));
@@ -84,7 +104,7 @@ void example_rnn()
 	auto relin_keys = keygen.relin_keys();
 	{
 		ofstream fs("rnn.galk", ios::binary);
-		keygen.galois_keys_save(custom_steps(hidden_size), fs);			
+		keygen.galois_keys_save(custom_steps(hidden_size), fs);
 	}
 
 	Encryptor encryptor(context, public_key);
