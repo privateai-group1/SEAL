@@ -12,9 +12,9 @@ typedef std::vector<double> vec;
 /// \name Plaintext Matrix-Vector Helpers
 ///@{
 /**
- * \brief Generates a square matrix with random values from [0,1]
+ * \brief Generates a square matrix with random values from [-1/2,1/2]
  * \param dim Dimension of the matrix
- * \return A square matrix of size dim x dim with values in [0,1]
+ * \return A square matrix of size dim x dim with values in [-1/2,1/2]
  */
 matrix random_square_matrix(size_t dim);
 
@@ -26,9 +26,9 @@ matrix random_square_matrix(size_t dim);
 matrix identity_matrix(size_t dim);
 
 /**
- * \brief Generates a vector with random values from [0,1]
+ * \brief Generates a vector with random values from [-1/2,1/2]
  * \param dim Length of the vector
- * \return A vector of length dim with values in [0,1]
+ * \return A vector of length dim with values in [-1/2,1/2]
  */
 vec random_vector(size_t dim);
 

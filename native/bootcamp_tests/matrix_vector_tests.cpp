@@ -15,7 +15,7 @@ namespace MVPlaintextTests
 			ASSERT_EQ(x.size(), dim);
 			for (auto& y : x)
 			{
-				EXPECT_TRUE((0 <= y) && (y <= 1));
+				EXPECT_TRUE((-0.5 <= y) && (y <= 0.5));
 			}
 		}
 	}
@@ -40,7 +40,7 @@ namespace MVPlaintextTests
 		ASSERT_EQ(t.size(), dim);
 		for (auto& x : t)
 		{
-			EXPECT_TRUE((0 <= x) && (x <= 1));
+			EXPECT_TRUE((-0.5 <= x) && (x <= 0.5));
 		}
 	}
 
@@ -194,7 +194,7 @@ namespace MVPlaintextTests
 		ASSERT_EQ(r.size(), dim);
 		for (size_t i = 0; i < dim; ++i)
 		{
-			EXPECT_DOUBLE_EQ(r[i], expected[i]);
+			EXPECT_FLOAT_EQ(r[i], expected[i]);
 		}
 
 

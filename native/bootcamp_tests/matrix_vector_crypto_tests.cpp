@@ -54,7 +54,7 @@ namespace MVCryptoTests {
 			for (size_t j = 0; j < dimension; ++j)
 			{
 				// Test if value is within 0.1% of the actual value or 10 sig figs
-				EXPECT_NEAR(t[j], diag(m, i)[j], max(0.000000001, 0.001 * diag(m, i)[j]));
+				EXPECT_NEAR(t[j], diag(m, i)[j], max(0.00000001, 0.001 * diag(m, i)[j]));
 			}
 		}
 
@@ -96,8 +96,8 @@ namespace MVCryptoTests {
 
 		for (size_t i = 0; i < dimension; ++i)
 		{
-			// Test if value is within 0.1% of the actual value or 10 sig figs
-			EXPECT_NEAR(r[i], expected[i], max(0.000000001, 0.001 * expected[i]));
+			// Test if value is within 0.1% of the actual value or 5 sig figs
+			EXPECT_NEAR(r[i], expected[i], max(0.0001, 0.001 * expected[i]));
 		}
 
 		//TODO: The EXPECT_FLOAT_EQ assertions might occasionally fail since the noise is somewhat random and we get less than 32 bits of guaranteed precision from these parameters

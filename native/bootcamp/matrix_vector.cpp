@@ -12,7 +12,7 @@ matrix random_square_matrix(size_t dim)
 		M[i].resize(dim);
 		for (size_t j = 0; j < dim; j++)
 		{
-			M[i][j] = static_cast<double>(rand()) / RAND_MAX;
+			M[i][j] = (static_cast<double>(rand()) / RAND_MAX) - 0.5;
 		}
 	}
 	return M;
@@ -34,7 +34,7 @@ vec random_vector(size_t dim)
 	vec v(dim);
 	for (size_t j = 0; j < dim; j++)
 	{
-		v[j] = static_cast<double>(rand()) / RAND_MAX;
+		v[j] = (static_cast<double>(rand()) / RAND_MAX) - 0.5;
 	}
 	return v;
 }
