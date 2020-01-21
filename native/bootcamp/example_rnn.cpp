@@ -34,10 +34,10 @@ void decrypt_and_compare(const Ciphertext& ctxt_r, vec expected, Decryptor& decr
 
 /// Create only the required power-of-two rotations
 /// This can save quite a bit, for example for poly_modulus_degree = 16384
-/// The default galois keys (with zlib compression) are 307 MB large
-/// Whereas with dimension = 256, they are only 189 MB
-/// For poly_modulus_degree = 32768, the default keys are 661MB large
-/// while with dimension = 256, they are only 378 MB
+/// The default galois keys (with zlib compression) are 247 MB large
+/// Whereas with dimension = 256, they are only 152 MB
+/// For poly_modulus_degree = 32768, the default keys are 532 MB large
+/// while with dimension = 256, they are only 304 MB
 vector<int> custom_steps(size_t dimension)
 {
 	if (dimension == 256)
