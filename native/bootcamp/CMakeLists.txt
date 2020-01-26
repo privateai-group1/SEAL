@@ -16,6 +16,7 @@ target_sources(bootcamp
 	mvproduct.cpp
 	polynomial_evaluation.cpp
 	matrix_vector.cpp
+	matrix_vector_crypto.cpp
 	example_rnn.cpp
 )
 
