@@ -1,3 +1,34 @@
+# Private Outsourced Translation of Medical Data
+
+This repository contains the code to our [Microsoft Reserach Private AI Bootcamp](https://www.microsoft.com/en-us/research/event/private-ai-bootcamp/) project. 
+
+## Project
+For a general idea of the motivation and setting, you can
+* watch a [recording of our presentation](https://www.microsoft.com/en-us/research/video/private-ai-bootcamp-competition-teams-1/) or
+* read our [report](private_outsourced_translation.pdf)
+
+## How to Run
+The easiest way to run this example is to open the top-level Solution ([Seal.sln]) in Visual Studio and choosing the "Bootcamp" project as the start-up project. Alternatively, you can use CMake with the provided [CMakeLists.txt](/native/bootcamp/CMakeLists.txt).
+
+* [``main.cpp``](/native/bootcamp/main.cpp) is a simple wrapper, asking which of the following examples you want to run:
+* (1) [``example_ckks.cpp``](/native/bootcamp/example_ckks.cpp) runs Kim Laine's example on optimzing computations in CKKS ([Original Source](https://github.com/kimlaine/bootcamp/tree/4_Optimizations/native)).
+* (2) [``polynomial_evaluation.cpp``](/native/bootcamp/polynomial_evaluation.cpp) runs Hao Chen's example on polynomial evaluation ([Original Source](https://github.com/haochenuw/algorithms-in-SEAL)).
+* (3) [``mvproduct.cpp``](/native/bootcamp/mvproduct.cpp) runs Hao Chen's example on matrix-vector products using the diagonal method ([Oiringal Source](https://github.com/haochenuw/algorithms-in-SEAL)).
+* (4) [``example_rnn.cpp``](/native/bootcamp/example_rnn.cpp) runs the prototype from our project, the encoding phase of a Recurrent Neural Network for machine translation.
+
+## Code
+Our code can be found in the [bootcamp](/native/bootcamp) folder, with the corresponding unit tests located in [bootcamp_tests](/native/bootcamp_tests).
+
+* [``matrix_vector``](/native/bootcamp/matrix_vector.h) Implements operations on plaintext vectors and matrices, including various matrix-vector-product implementations.
+* [``matrix_vector_crypto``](/native/bootcamp/matrix_vector_crypto.h) Implements the same operations, but on encrypted values. The matrix-vector-product here assumes a plaintext matrix and an encrypted vector, uses the diaognal method due to Halevi and Shoup as well as the baby-step--giant-step optimization (see the report or code comments for more information on these).
+* [``example_rnn``](/native/bootcamp/example_rnn.cpp) Uses the previous tools to evaluate the encoding phase of an RNN, using x^2 as a stand-in approximation of the activiation function (see the report for more details).
+* Various other helper functions and tests can be found in the remaining files.
+ 
+ 
+ Below, you can find the original documentation for Microsoft Research's SEAL library
+ 
+--------
+
 # Microsoft SEAL
 
 Microsoft SEAL is an easy-to-use open-source ([MIT licensed](LICENSE)) homomorphic
